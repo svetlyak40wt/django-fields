@@ -1,0 +1,15 @@
+import unittest
+
+from django.db import models
+from fields import EncryptedCharField
+
+class EncObject(models.Model):
+    password = EncryptedCharField(max_length=20)
+
+class EncryptTests(unittest.TestCase):
+    def testPasswordLength(self):
+        password = 'this is a password!!'
+        obj = EncObject(password = password)
+        obj.save()
+        obj = EncObject.objects.get(obj.id)
+        self.assertEqual(password, obj.password)
