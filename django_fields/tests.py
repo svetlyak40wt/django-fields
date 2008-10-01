@@ -7,7 +7,7 @@ class EncObject(models.Model):
     password = EncryptedCharField(max_length=20)
 
 class EncryptTests(unittest.TestCase):
-    def testPasswordLength(self):
+    def testMaxFieldLength(self):
         password = 'this is a password!!'
         obj = EncObject(password = password)
         obj.save()
