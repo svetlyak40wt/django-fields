@@ -11,5 +11,6 @@ class EncryptTests(unittest.TestCase):
         password = 'this is a password!!'
         obj = EncObject(password = password)
         obj.save()
-        obj = EncObject.objects.get(obj.id)
+        obj = EncObject.objects.get(id=obj.id)
         self.assertEqual(password, obj.password)
+
