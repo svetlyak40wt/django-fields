@@ -9,8 +9,12 @@ EncryptedCharField and EncryptedTextField.
 Requirements
 -----------
 
-This application depends on python-pycrypto, which can be found in many Linux
+This application depends on *python-crypto*, which can be found in many Linux
 repositories, or downloaded from http://www.dlitz.net/software/pycrypto/.
+
+Under Ubuntu, just do:
+
+    sudo apt-get install python-crypto
 
 Examples
 --------
