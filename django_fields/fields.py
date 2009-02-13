@@ -7,6 +7,13 @@ from django.db import models
 from django.conf import settings
 
 
+USE_CPICKLE = getattr(settings, 'USE_CPICKLE', False)
+
+if USE_CPICKLE:
+    import cPickle as pickle
+else:
+    import pickle
+
 class BaseEncryptedField(models.Field):
     '''This code is based on the djangosnippet #1095
        You can find the original at http://www.djangosnippets.org/snippets/1095/'''
@@ -51,7 +58,7 @@ class BaseEncryptedField(models.Field):
 class EncryptedTextField(BaseEncryptedField):
     __metaclass__ = models.SubfieldBase
 
-    def get_internal_type(self): 
+    def get_internal_type(self):
         return 'TextField'
 
     def formfield(self, **kwargs):
@@ -70,3 +77,34 @@ class EncryptedCharField(BaseEncryptedField):
         defaults.update(kwargs)
         return super(EncryptedCharField, self).formfield(**defaults)
 
+class PickleField(models.TextField):
+    __metaclass__ = models.SubfieldBase
+
+    editable = False
+    serialize = False
+
+    def get_db_prep_value(self, value):
+        return pickle.dumps(value)
+
+    def to_python(self, value):
+        if not isinstance(value, basestring):
+            return value
+
+        # Tries to convert unicode objects to string, cause loads pickle from
+        # unicode excepts ugly ``KeyError: '\x00'``.
+        #
+        # If not possible return this value, cause it's not pickled yet.
+        if isinstance(value, unicode):
+            try:
+                str_value = str(value)
+            except UnicodeEncodeError:
+                return value
+        else:
+            str_value = value
+
+        try:
+            return pickle.loads(str_value)
+        except ValueError:
+            # If pickle could not loads from string it's means that it's Python
+            # string saved to PickleField.
+            return value
