@@ -5,6 +5,7 @@ import string
 from django import forms
 from django.db import models
 from django.conf import settings
+from django.utils.encoding import smart_str
 
 
 USE_CPICKLE = getattr(settings, 'USE_CPICKLE', False)
@@ -92,19 +93,9 @@ class PickleField(models.TextField):
 
         # Tries to convert unicode objects to string, cause loads pickle from
         # unicode excepts ugly ``KeyError: '\x00'``.
-        #
-        # If not possible return this value, cause it's not pickled yet.
-        if isinstance(value, unicode):
-            try:
-                str_value = str(value)
-            except UnicodeEncodeError:
-                return value
-        else:
-            str_value = value
-
         try:
-            return pickle.loads(str_value)
+            return pickle.loads(smart_str(value))
+        # If pickle could not loads from string it's means that it's Python
+        # string saved to PickleField.
         except ValueError:
-            # If pickle could not loads from string it's means that it's Python
-            # string saved to PickleField.
             return value
