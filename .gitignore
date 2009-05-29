@@ -1,4 +1,6 @@
 *.pyc
 .*.swp
+*.egg-info
 database.db
-
+build
+dist
