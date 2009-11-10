@@ -21,7 +21,10 @@ class BaseEncryptedField(models.Field):
 
     def __init__(self, *args, **kwargs):
         cipher = kwargs.pop('cipher', 'AES')
-        imp = __import__('Crypto.Cipher', globals(), locals(), [cipher], -1)
+        try:
+            imp = __import__('Crypto.Cipher', globals(), locals(), [cipher], -1)
+        except:
+            imp = __import__('Crypto.Cipher', globals(), locals(), [cipher])
         self.cipher = getattr(imp, cipher).new(settings.SECRET_KEY[:32])
         self.prefix = '$%s$' % cipher
 
