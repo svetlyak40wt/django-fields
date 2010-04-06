@@ -4,3 +4,8 @@
 database.db
 build
 dist
+.installed.cfg
+bin/
+develop-eggs/
+parts/
+test.sqlite
