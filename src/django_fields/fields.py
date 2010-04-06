@@ -5,7 +5,7 @@ import string
 from django import forms
 from django.db import models
 from django.conf import settings
-from django.utils.encoding import smart_str
+from django.utils.encoding import smart_str, force_unicode
 
 
 USE_CPICKLE = getattr(settings, 'USE_CPICKLE', False)
@@ -48,10 +48,16 @@ class BaseEncryptedField(models.Field):
 
     def to_python(self, value):
         if self._is_encrypted(value):
-            return self.cipher.decrypt(binascii.a2b_hex(value[len(self.prefix):])).split('\0')[0]
+            return force_unicode(
+                self.cipher.decrypt(
+                    binascii.a2b_hex(value[len(self.prefix):])
+                ).split('\0')[0]
+            )
         return value
 
     def get_db_prep_value(self, value):
+        value = smart_str(value)
+
         if value is not None and not self._is_encrypted(value):
             padding  = self._get_padding(value)
             if padding > 0:

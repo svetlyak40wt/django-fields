@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import unittest
 
 from django.db import models
@@ -15,6 +16,14 @@ class PickleObject(models.Model):
 class EncryptTests(unittest.TestCase):
     def testMaxFieldLength(self):
         password = 'this is a password!!'
+        obj = EncObject(password = password)
+        obj.save()
+        obj = EncObject.objects.get(id=obj.id)
+        self.assertEqual(password, obj.password)
+
+
+    def testUTF8(self):
+        password = u'совершенно секретно'
         obj = EncObject(password = password)
         obj.save()
         obj = EncObject.objects.get(id=obj.id)
