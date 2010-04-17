@@ -29,6 +29,7 @@ class BaseEncryptedField(models.Field):
         self.prefix = '$%s$' % cipher
 
         max_length = kwargs.get('max_length', 40)
+        self.unencrypted_length = max_length
         mod = max_length % self.cipher.block_size
         if mod > 0:
             max_length += self.cipher.block_size - mod
@@ -86,6 +87,14 @@ class EncryptedCharField(BaseEncryptedField):
         defaults = {'max_length': self.max_length}
         defaults.update(kwargs)
         return super(EncryptedCharField, self).formfield(**defaults)
+
+    def get_db_prep_value(self, value):
+        if value is not None and not self._is_encrypted(value):
+            if len(value) > self.unencrypted_length:
+                raise ValueError("Field value longer than max allowed: " +
+                    str(len(value)) + " > " + str(self.unencrypted_length))
+        return super(EncryptedCharField, self).get_db_prep_value(value)
+
 
 class PickleField(models.TextField):
     __metaclass__ = models.SubfieldBase

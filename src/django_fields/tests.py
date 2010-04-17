@@ -45,9 +45,7 @@ class EncryptTests(unittest.TestCase):
     def testFieldTooLong(self):
         password = 'a' * (EncObject.max_password + 1)
         obj = EncObject(password = password)
-        # FIXME:  We should get an exception here.
-        self.assertEqual(password, obj.password)
-        # self.assertRaises(Exception, obj.save)
+        self.assertRaises(Exception, obj.save)
 
     def testUTF8(self):
         password = u'совершенно секретно'
