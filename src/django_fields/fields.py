@@ -1,4 +1,5 @@
 import binascii
+import datetime
 import random
 import string
 
@@ -94,6 +95,39 @@ class EncryptedCharField(BaseEncryptedField):
                 raise ValueError("Field value longer than max allowed: " +
                     str(len(value)) + " > " + str(self.unencrypted_length))
         return super(EncryptedCharField, self).get_db_prep_value(value)
+
+
+class EncryptedDateField(BaseEncryptedField):
+    __metaclass__ = models.SubfieldBase
+
+    def __init__(self, *args, **kwargs):
+        kwargs['max_length'] = 10  # YYYY-MM-DD
+        super(EncryptedDateField, self).__init__(*args, **kwargs)
+
+    def get_internal_type(self):
+        return 'CharField'
+
+    def formfield(self, **kwargs):
+        defaults = {'widget': forms.DateInput}
+        defaults.update(kwargs)
+        return super(EncryptedDateField, self).formfield(**defaults)
+
+    def to_python(self, value):
+        # value is a date string in the format "YYYY-MM-DD"
+        date_text = super(EncryptedDateField, self).to_python(value)
+        if isinstance(date_text, datetime.date):
+            date_value = date_text
+        else:
+            year, month, day = map(int, date_text.split('-'))
+            date_value = datetime.date(year, month, day)
+        return date_value
+
+    # def get_prep_value(self, value):
+    def get_db_prep_value(self, value):
+        # value is a datetime.date.
+        # We need to convert it to a string in the format "YYYY-MM-DD"
+        date_text = value.strftime("%Y-%m-%d")
+        return super(EncryptedDateField, self).get_db_prep_value(date_text)
 
 
 class PickleField(models.TextField):

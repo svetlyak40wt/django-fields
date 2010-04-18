@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
+import datetime
 import unittest
 
 from django.db import connection
 from django.db import models
 
-from fields import EncryptedCharField, PickleField
+from fields import EncryptedCharField, EncryptedDateField, PickleField
 
 
 class EncObject(models.Model):
     max_password = 20
     password = EncryptedCharField(max_length=max_password)
+
+class EncDate(models.Model):
+    important_date = EncryptedDateField()
 
 class PickleObject(models.Model):
     name = models.CharField(max_length=16)
@@ -92,6 +96,33 @@ class EncryptTests(unittest.TestCase):
         enc_pwd_1 = self._get_encrypted_password(obj_1.id)
         enc_pwd_2 = self._get_encrypted_password(obj_2.id)
         return enc_pwd_1, enc_pwd_2
+
+
+class DateEncryptTests(unittest.TestCase):
+    def setUp(self):
+        EncDate.objects.all().delete()
+
+    def testDateEncryption(self):
+        today = datetime.date.today()
+        obj = EncDate(important_date=today)
+        obj.save()
+        # The date from the retrieved object should be the same...
+        obj = EncDate.objects.get(id=obj.id)
+        self.assertEqual(today, obj.important_date)
+        # ...but the value in the database should not
+        important_date = self._get_encrypted_date(obj.id)
+        self.assertTrue(important_date.startswith('$AES$'))
+        self.assertNotEqual(important_date, today)
+
+    ### Utility methods for tests ###
+
+    def _get_encrypted_date(self, id):
+        cursor = connection.cursor()
+        cursor.execute("select important_date from django_fields_encdate where id = %s", [id,])
+        important_dates = map(lambda x: x[0], cursor.fetchall())
+        self.assertEqual(len(important_dates), 1)  # only one
+        return important_dates[0]
+
 
 class TestPickleField(unittest.TestCase):
     def setUp(self):
