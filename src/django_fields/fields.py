@@ -31,6 +31,8 @@ class BaseEncryptedField(models.Field):
 
         max_length = kwargs.get('max_length', 40)
         self.unencrypted_length = max_length
+        # always add at least 2 to the max_length: one for the null byte, one for padding
+        max_length += 2
         mod = max_length % self.cipher.block_size
         if mod > 0:
             max_length += self.cipher.block_size - mod
@@ -42,10 +44,10 @@ class BaseEncryptedField(models.Field):
         return isinstance(value, basestring) and value.startswith(self.prefix)
 
     def _get_padding(self, value):
-        mod = len(value) % self.cipher.block_size
-        if mod > 0:
-            return self.cipher.block_size - mod
-        return 0
+        # We always want at least 2 chars of padding (including zero byte),
+        # so we could have up to block_size + 1 chars.
+        mod = (len(value) + 2) % self.cipher.block_size
+        return self.cipher.block_size - mod + 2
 
 
     def to_python(self, value):

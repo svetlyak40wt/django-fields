@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
+import string
 import unittest
 
 from django.db import connection
@@ -66,15 +67,18 @@ class EncryptTests(unittest.TestCase):
         # NOTE:  This may fail occasionally because the randomly-generated padding could be the same for both values.
         # A 14-char string will only have 1 char of padding.  There's a 1/len(string.printable) chance of getting the
         # same value twice.
-        for pwd_length in range(1,15) + range(17,21):  # 1-14, 17-20 inclusive
+        for pwd_length in range(1,21):  # 1-20 inclusive
             enc_pwd_1, enc_pwd_2 = self._get_two_passwords(pwd_length)
             self.assertNotEqual(enc_pwd_1, enc_pwd_2)
-        # 15 or 16-character strings will encrypt the same way consistently
-        # FIXME:  This is not a good thing.
-        enc_pwd_1, enc_pwd_2 = self._get_two_passwords(15)
-        self.assertEqual(enc_pwd_1, enc_pwd_2)
-        enc_pwd_1, enc_pwd_2 = self._get_two_passwords(16)
-        self.assertEqual(enc_pwd_1, enc_pwd_2)
+    
+    def testMinimumPadding(self):
+        """
+        There should always be at least two chars of padding.
+        """
+        enc_field = EncryptedCharField()
+        for pwd_length in range(1,21):  # 1-20 inclusive
+            password = 'a' * pwd_length  # 'a', 'aa', ...
+            self.assertTrue(enc_field._get_padding(password) >= 2)
 
     ### Utility methods for tests ###
 
