@@ -6,7 +6,7 @@ import unittest
 from django.db import connection
 from django.db import models
 
-from fields import EncryptedCharField, EncryptedDateField, PickleField
+from fields import EncryptedCharField, EncryptedDateField, EncryptedDateTimeField, PickleField
 
 
 class EncObject(models.Model):
@@ -15,6 +15,10 @@ class EncObject(models.Model):
 
 class EncDate(models.Model):
     important_date = EncryptedDateField()
+
+class EncDateTime(models.Model):
+    important_datetime = EncryptedDateTimeField()
+    # important_datetime = EncryptedDateField()
 
 class PickleObject(models.Model):
     name = models.CharField(max_length=16)
@@ -106,6 +110,11 @@ class DateEncryptTests(unittest.TestCase):
     def setUp(self):
         EncDate.objects.all().delete()
 
+    def testBCDate(self):
+        # datetime.MINYEAR is 1 -- so much for history
+        func = lambda: datetime.date(0, 1, 1)
+        self.assertRaises(ValueError, func)
+
     def testDateEncryption(self):
         today = datetime.date.today()
         obj = EncDate(important_date=today)
@@ -118,6 +127,18 @@ class DateEncryptTests(unittest.TestCase):
         self.assertTrue(important_date.startswith('$AES$'))
         self.assertNotEqual(important_date, today)
 
+    def testDateTimeEncryption(self):
+        now = datetime.datetime.now()
+        obj = EncDateTime(important_datetime=now)
+        obj.save()
+        # The datetime from the retrieved object should be the same...
+        obj = EncDateTime.objects.get(id=obj.id)
+        self.assertEqual(now, obj.important_datetime)
+        # ...but the value in the database should not
+        important_datetime = self._get_encrypted_datetime(obj.id)
+        self.assertTrue(important_datetime.startswith('$AES$'))
+        self.assertNotEqual(important_datetime, now)
+
     ### Utility methods for tests ###
 
     def _get_encrypted_date(self, id):
@@ -126,6 +147,13 @@ class DateEncryptTests(unittest.TestCase):
         important_dates = map(lambda x: x[0], cursor.fetchall())
         self.assertEqual(len(important_dates), 1)  # only one
         return important_dates[0]
+
+    def _get_encrypted_datetime(self, id):
+        cursor = connection.cursor()
+        cursor.execute("select important_datetime from django_fields_encdatetime where id = %s", [id,])
+        important_datetimes = map(lambda x: x[0], cursor.fetchall())
+        self.assertEqual(len(important_datetimes), 1)  # only one
+        return important_datetimes[0]
 
 
 class TestPickleField(unittest.TestCase):

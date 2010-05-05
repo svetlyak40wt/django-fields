@@ -99,37 +99,86 @@ class EncryptedCharField(BaseEncryptedField):
         return super(EncryptedCharField, self).get_db_prep_value(value)
 
 
-class EncryptedDateField(BaseEncryptedField):
-    __metaclass__ = models.SubfieldBase
+class BaseEncryptedDateField(BaseEncryptedField):
+    # Do NOT define a __metaclass__ for this - it's abstract.
+    # Had to make this an abstract parent to both EncryptedDateField and EncryptedDateTimeField.
+    # Tried to make EncryptedDateTimeField subclass from EncryptedDateField,
+    # and got a very opaque infinite recursion in contribute_to_class,
+    # caused by having a parent with __metaclass__ = models.SubfieldBase.
 
     def __init__(self, *args, **kwargs):
-        kwargs['max_length'] = 10  # YYYY-MM-DD
-        super(EncryptedDateField, self).__init__(*args, **kwargs)
+        kwargs['max_length'] = self.max_raw_length
+        super(BaseEncryptedDateField, self).__init__(*args, **kwargs)
 
     def get_internal_type(self):
         return 'CharField'
 
     def formfield(self, **kwargs):
-        defaults = {'widget': forms.DateInput}
+        defaults = {'widget': self.form_widget}
         defaults.update(kwargs)
-        return super(EncryptedDateField, self).formfield(**defaults)
+        return super(BaseEncryptedDateField, self).formfield(**defaults)
 
     def to_python(self, value):
-        # value is a date string in the format "YYYY-MM-DD"
-        date_text = super(EncryptedDateField, self).to_python(value)
-        if isinstance(date_text, datetime.date):
+        # value is a date string in the format "YYYY:MM:DD"
+        date_text = super(BaseEncryptedDateField, self).to_python(value)
+        if isinstance(date_text, self.date_class):
             date_value = date_text
         else:
-            year, month, day = map(int, date_text.split('-'))
-            date_value = datetime.date(year, month, day)
+            date_value = self.date_class(*map(int, date_text.split(':')))
         return date_value
 
     # def get_prep_value(self, value):
     def get_db_prep_value(self, value):
-        # value is a datetime.date.
-        # We need to convert it to a string in the format "YYYY-MM-DD"
-        date_text = value.strftime("%Y-%m-%d")
-        return super(EncryptedDateField, self).get_db_prep_value(date_text)
+        # value is a date_class.
+        # We need to convert it to a string in the format "YYYY:MM:DD"
+        date_text = value.strftime(self.save_format)
+        return super(BaseEncryptedDateField, self).get_db_prep_value(date_text)
+
+
+class EncryptedDateField(BaseEncryptedDateField):
+    __metaclass__ = models.SubfieldBase
+    form_widget = forms.DateInput
+    save_format = "%Y:%m:%d"
+    date_class = datetime.date
+    max_raw_length = 10  # YYYY:MM:DD
+
+
+# class EncryptedDateTimeField(BaseEncryptedField):
+class EncryptedDateTimeField(BaseEncryptedDateField):
+    # FIXME:  This should deal with time zones, but Python doesn't really either.
+    __metaclass__ = models.SubfieldBase
+    form_widget = forms.DateTimeInput
+    save_format = "%Y:%m:%d:%H:%M:%S:%f"
+    date_class = datetime.datetime
+    max_raw_length = 26  # YYYY:MM:DD:hh:mm:ss:micros
+
+#    def __init__(self, *args, **kwargs):
+#        kwargs['max_length'] = self.max_raw_length
+#        super(EncryptedDateTimeField, self).__init__(*args, **kwargs)
+#
+#    def get_internal_type(self):
+#        return 'CharField'
+#
+#    def formfield(self, **kwargs):
+#        defaults = {'widget': forms.DateTimeInput}
+#        defaults.update(kwargs)
+#        return super(EncryptedDateTimeField, self).formfield(**defaults)
+#
+#    def to_python(self, value):
+#        # value is a datetime string in the format "YYYY:MM:DD:hh:mm:ss:micros"
+#        datetime_text = super(EncryptedDateTimeField, self).to_python(value)
+#        if isinstance(datetime_text, datetime.datetime):
+#            datetime_value = datetime_text
+#        else:
+#            datetime_value = datetime.datetime(*map(int, datetime_text.split(':')))
+#        return datetime_value
+#
+#    # def get_prep_value(self, value):
+#    def get_db_prep_value(self, value):
+#        # value is a datetime.datetime.
+#        # We need to convert it to a string in the format "YYYY:MM:DD:hh:mm:ss:micros"
+#        datetime_text = value.strftime("%Y:%m:%d:%H:%M:%S:%f")
+#        return super(EncryptedDateTimeField, self).get_db_prep_value(datetime_text)
 
 
 class PickleField(models.TextField):
