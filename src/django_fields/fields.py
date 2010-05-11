@@ -2,6 +2,7 @@ import binascii
 import datetime
 import random
 import string
+import sys
 
 from django import forms
 from django.db import models
@@ -119,11 +120,11 @@ class BaseEncryptedDateField(BaseEncryptedField):
         return super(BaseEncryptedDateField, self).formfield(**defaults)
 
     def to_python(self, value):
-        # value is a date string in the format "YYYY:MM:DD"
-        date_text = super(BaseEncryptedDateField, self).to_python(value)
-        if isinstance(date_text, self.date_class):
-            date_value = date_text
+        # value is either a date or a string in the format "YYYY:MM:DD"
+        if isinstance(value, self.date_class):
+            date_value = value
         else:
+            date_text = super(BaseEncryptedDateField, self).to_python(value)
             date_value = self.date_class(*map(int, date_text.split(':')))
         return date_value
 
@@ -143,7 +144,6 @@ class EncryptedDateField(BaseEncryptedDateField):
     max_raw_length = 10  # YYYY:MM:DD
 
 
-# class EncryptedDateTimeField(BaseEncryptedField):
 class EncryptedDateTimeField(BaseEncryptedDateField):
     # FIXME:  This should deal with time zones, but Python doesn't really either.
     __metaclass__ = models.SubfieldBase
@@ -152,33 +152,55 @@ class EncryptedDateTimeField(BaseEncryptedDateField):
     date_class = datetime.datetime
     max_raw_length = 26  # YYYY:MM:DD:hh:mm:ss:micros
 
-#    def __init__(self, *args, **kwargs):
-#        kwargs['max_length'] = self.max_raw_length
-#        super(EncryptedDateTimeField, self).__init__(*args, **kwargs)
-#
-#    def get_internal_type(self):
-#        return 'CharField'
-#
-#    def formfield(self, **kwargs):
-#        defaults = {'widget': forms.DateTimeInput}
-#        defaults.update(kwargs)
-#        return super(EncryptedDateTimeField, self).formfield(**defaults)
-#
-#    def to_python(self, value):
-#        # value is a datetime string in the format "YYYY:MM:DD:hh:mm:ss:micros"
-#        datetime_text = super(EncryptedDateTimeField, self).to_python(value)
-#        if isinstance(datetime_text, datetime.datetime):
-#            datetime_value = datetime_text
-#        else:
-#            datetime_value = datetime.datetime(*map(int, datetime_text.split(':')))
-#        return datetime_value
-#
-#    # def get_prep_value(self, value):
-#    def get_db_prep_value(self, value):
-#        # value is a datetime.datetime.
-#        # We need to convert it to a string in the format "YYYY:MM:DD:hh:mm:ss:micros"
-#        datetime_text = value.strftime("%Y:%m:%d:%H:%M:%S:%f")
-#        return super(EncryptedDateTimeField, self).get_db_prep_value(datetime_text)
+
+class BaseEncryptedNumberField(BaseEncryptedField):
+    # Do NOT define a __metaclass__ for this - it's abstract.
+    # See BaseEncryptedDateField for full explanation.
+    def __init__(self, *args, **kwargs):
+        if self.max_raw_length:
+            kwargs['max_length'] = self.max_raw_length
+        super(BaseEncryptedNumberField, self).__init__(*args, **kwargs)
+
+    def get_internal_type(self):
+        return 'CharField'
+
+    def to_python(self, value):
+        # value is either an int or a string of an integer
+        if isinstance(value, self.number_type):
+            number = value
+        else:
+            number_text = super(BaseEncryptedNumberField, self).to_python(value)
+            number = self.number_type(number_text)
+        return number
+
+    # def get_prep_value(self, value):
+    def get_db_prep_value(self, value):
+        number_text = self.format_string % value
+        return super(BaseEncryptedNumberField, self).get_db_prep_value(number_text)
+
+
+class EncryptedIntField(BaseEncryptedNumberField):
+    __metaclass__ = models.SubfieldBase
+    max_raw_length = len(str(-sys.maxint - 1))
+    number_type = int
+    format_string = "%d"
+
+
+class EncryptedLongField(BaseEncryptedNumberField):
+    __metaclass__ = models.SubfieldBase
+    max_raw_length = None  # no limit
+    number_type = long
+    format_string = "%d"
+
+    def get_internal_type(self):
+        return 'TextField'
+
+
+class EncryptedFloatField(BaseEncryptedNumberField):
+    __metaclass__ = models.SubfieldBase
+    max_raw_length = 150  # arbitrary, but should be sufficient
+    number_type = float
+    format_string = "%0.66f"  # Change if this is too long for some architectures.
 
 
 class PickleField(models.TextField):

@@ -1,28 +1,45 @@
 # -*- coding: utf-8 -*-
 import datetime
 import string
+import sys
 import unittest
 
 from django.db import connection
 from django.db import models
 
-from fields import EncryptedCharField, EncryptedDateField, EncryptedDateTimeField, PickleField
+from fields import EncryptedCharField, EncryptedDateField, EncryptedDateTimeField, EncryptedIntField, EncryptedLongField, EncryptedFloatField, PickleField
 
 
 class EncObject(models.Model):
     max_password = 20
     password = EncryptedCharField(max_length=max_password)
 
+
 class EncDate(models.Model):
     important_date = EncryptedDateField()
+
 
 class EncDateTime(models.Model):
     important_datetime = EncryptedDateTimeField()
     # important_datetime = EncryptedDateField()
 
+
+class EncInt(models.Model):
+    important_number = EncryptedIntField()
+
+
+class EncLong(models.Model):
+    important_number = EncryptedLongField()
+
+
+class EncFloat(models.Model):
+    important_number = EncryptedFloatField()
+
+
 class PickleObject(models.Model):
     name = models.CharField(max_length=16)
     data = PickleField()
+
 
 class EncryptTests(unittest.TestCase):
 
@@ -154,6 +171,49 @@ class DateEncryptTests(unittest.TestCase):
         important_datetimes = map(lambda x: x[0], cursor.fetchall())
         self.assertEqual(len(important_datetimes), 1)  # only one
         return important_datetimes[0]
+
+
+class NumberEncryptTests(unittest.TestCase):
+    def setUp(self):
+        EncInt.objects.all().delete()
+        EncLong.objects.all().delete()
+        EncFloat.objects.all().delete()
+
+    def testIntEncryption(self):
+        self._testNumberEncryption(EncInt, 'int', sys.maxint)
+
+    def testMinIntEncryption(self):
+        self._testNumberEncryption(EncInt, 'int', -sys.maxint - 1)
+
+    def testLongEncryption(self):
+        self._testNumberEncryption(EncLong, 'long', long(sys.maxint) * 100L)
+
+    def testFloatEncryption(self):
+        value = 123.456 + sys.maxint
+        self._testNumberEncryption(EncFloat, 'float', value)
+
+    def testOneThirdFloatEncryption(self):
+        value = sys.maxint + (1.0 / 3.0)
+        self._testNumberEncryption(EncFloat, 'float', value)
+
+    def _testNumberEncryption(self, number_class, type_name, value):
+        obj = number_class(important_number=value)
+        obj.save()
+        # The int from the retrieved object should be the same...
+        obj = number_class.objects.get(id=obj.id)
+        self.assertEqual(value, obj.important_number)
+        # ...but the value in the database should not
+        number = self._get_encrypted_number(type_name, obj.id)
+        self.assertTrue(number.startswith('$AES$'))
+        self.assertNotEqual(number, value)
+
+    def _get_encrypted_number(self, type_name, id):
+        cursor = connection.cursor()
+        sql = "select important_number from django_fields_enc%s where id = %%s" % (type_name,)
+        cursor.execute(sql, [id,])
+        important_numbers = map(lambda x: x[0], cursor.fetchall())
+        self.assertEqual(len(important_numbers), 1)  # only one
+        return important_numbers[0]
 
 
 class TestPickleField(unittest.TestCase):
