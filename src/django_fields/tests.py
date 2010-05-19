@@ -46,7 +46,7 @@ class EncryptTests(unittest.TestCase):
     def setUp(self):
         EncObject.objects.all().delete()
 
-    def testEncryption(self):
+    def test_encryption(self):
         """
         Test that the database values are actually encrypted.
         """
@@ -61,26 +61,26 @@ class EncryptTests(unittest.TestCase):
         self.assertNotEqual(encrypted_password, password)
         self.assertTrue(encrypted_password.startswith('$AES$'))
 
-    def testMaxFieldLength(self):
+    def test_max_field_length(self):
         password = 'a' * EncObject.max_password
         obj = EncObject(password = password)
         obj.save()
         obj = EncObject.objects.get(id=obj.id)
         self.assertEqual(password, obj.password)
 
-    def testFieldTooLong(self):
+    def test_field_too_long(self):
         password = 'a' * (EncObject.max_password + 1)
         obj = EncObject(password = password)
         self.assertRaises(Exception, obj.save)
 
-    def testUTF8(self):
+    def test_UTF8(self):
         password = u'совершенно секретно'
         obj = EncObject(password = password)
         obj.save()
         obj = EncObject.objects.get(id=obj.id)
         self.assertEqual(password, obj.password)
     
-    def testConsistentEncryption(self):
+    def test_consistent_encryption(self):
         """
         The same password should not encrypt the same way twice.
         Check different lengths.
@@ -92,7 +92,7 @@ class EncryptTests(unittest.TestCase):
             enc_pwd_1, enc_pwd_2 = self._get_two_passwords(pwd_length)
             self.assertNotEqual(enc_pwd_1, enc_pwd_2)
     
-    def testMinimumPadding(self):
+    def test_minimum_padding(self):
         """
         There should always be at least two chars of padding.
         """
@@ -127,12 +127,12 @@ class DateEncryptTests(unittest.TestCase):
     def setUp(self):
         EncDate.objects.all().delete()
 
-    def testBCDate(self):
+    def test_BC_date(self):
         # datetime.MINYEAR is 1 -- so much for history
         func = lambda: datetime.date(0, 1, 1)
         self.assertRaises(ValueError, func)
 
-    def testDateEncryption(self):
+    def test_date_encryption(self):
         today = datetime.date.today()
         obj = EncDate(important_date=today)
         obj.save()
@@ -144,7 +144,7 @@ class DateEncryptTests(unittest.TestCase):
         self.assertTrue(important_date.startswith('$AES$'))
         self.assertNotEqual(important_date, today)
 
-    def testDateTimeEncryption(self):
+    def test_date_time_encryption(self):
         now = datetime.datetime.now()
         obj = EncDateTime(important_datetime=now)
         obj.save()
@@ -179,24 +179,24 @@ class NumberEncryptTests(unittest.TestCase):
         EncLong.objects.all().delete()
         EncFloat.objects.all().delete()
 
-    def testIntEncryption(self):
-        self._testNumberEncryption(EncInt, 'int', sys.maxint)
+    def test_int_encryption(self):
+        self._test_number_encryption(EncInt, 'int', sys.maxint)
 
-    def testMinIntEncryption(self):
-        self._testNumberEncryption(EncInt, 'int', -sys.maxint - 1)
+    def test_min_int_encryption(self):
+        self._test_number_encryption(EncInt, 'int', -sys.maxint - 1)
 
-    def testLongEncryption(self):
-        self._testNumberEncryption(EncLong, 'long', long(sys.maxint) * 100L)
+    def test_long_encryption(self):
+        self._test_number_encryption(EncLong, 'long', long(sys.maxint) * 100L)
 
-    def testFloatEncryption(self):
+    def test_float_encryption(self):
         value = 123.456 + sys.maxint
-        self._testNumberEncryption(EncFloat, 'float', value)
+        self._test_number_encryption(EncFloat, 'float', value)
 
-    def testOneThirdFloatEncryption(self):
+    def test_one_third_float_encryption(self):
         value = sys.maxint + (1.0 / 3.0)
-        self._testNumberEncryption(EncFloat, 'float', value)
+        self._test_number_encryption(EncFloat, 'float', value)
 
-    def _testNumberEncryption(self, number_class, type_name, value):
+    def _test_number_encryption(self, number_class, type_name, value):
         obj = number_class(important_number=value)
         obj.save()
         # The int from the retrieved object should be the same...

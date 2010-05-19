@@ -32,7 +32,8 @@ class BaseEncryptedField(models.Field):
 
         max_length = kwargs.get('max_length', 40)
         self.unencrypted_length = max_length
-        # always add at least 2 to the max_length: one for the null byte, one for padding
+        # always add at least 2 to the max_length:
+        #     one for the null byte, one for padding
         max_length += 2
         mod = max_length % self.cipher.block_size
         if mod > 0:
@@ -66,9 +67,11 @@ class BaseEncryptedField(models.Field):
         if value is not None and not self._is_encrypted(value):
             padding  = self._get_padding(value)
             if padding > 0:
-                value += "\0" + ''.join([random.choice(string.printable) for index in range(padding-1)])
+                value += "\0" + ''.join([random.choice(string.printable)
+                    for index in range(padding-1)])
             value = self.prefix + binascii.b2a_hex(self.cipher.encrypt(value))
         return value
+
 
 class EncryptedTextField(BaseEncryptedField):
     __metaclass__ = models.SubfieldBase
@@ -80,6 +83,7 @@ class EncryptedTextField(BaseEncryptedField):
         defaults = {'widget': forms.Textarea}
         defaults.update(kwargs)
         return super(EncryptedTextField, self).formfield(**defaults)
+
 
 class EncryptedCharField(BaseEncryptedField):
     __metaclass__ = models.SubfieldBase
@@ -101,11 +105,10 @@ class EncryptedCharField(BaseEncryptedField):
 
 
 class BaseEncryptedDateField(BaseEncryptedField):
-    # Do NOT define a __metaclass__ for this - it's abstract.
-    # Had to make this an abstract parent to both EncryptedDateField and EncryptedDateTimeField.
-    # Tried to make EncryptedDateTimeField subclass from EncryptedDateField,
-    # and got a very opaque infinite recursion in contribute_to_class,
-    # caused by having a parent with __metaclass__ = models.SubfieldBase.
+    # Do NOT define a __metaclass__ for this - it's an abstract parent
+    # for EncryptedDateField and EncryptedDateTimeField.
+    # If you try to inherit from a class with a __metaclass__, you'll
+    # get a very opaque infinite recursion in contribute_to_class.
 
     def __init__(self, *args, **kwargs):
         kwargs['max_length'] = self.max_raw_length
@@ -145,7 +148,7 @@ class EncryptedDateField(BaseEncryptedDateField):
 
 
 class EncryptedDateTimeField(BaseEncryptedDateField):
-    # FIXME:  This should deal with time zones, but Python doesn't really either.
+    # FIXME:  This doesn't handle time zones, but Python doesn't really either.
     __metaclass__ = models.SubfieldBase
     form_widget = forms.DateTimeInput
     save_format = "%Y:%m:%d:%H:%M:%S:%f"
@@ -200,7 +203,8 @@ class EncryptedFloatField(BaseEncryptedNumberField):
     __metaclass__ = models.SubfieldBase
     max_raw_length = 150  # arbitrary, but should be sufficient
     number_type = float
-    format_string = "%0.66f"  # Change if this is too long for some architectures.
+    # If this format is too long for some architectures, change it.
+    format_string = "%0.66f"
 
 
 class PickleField(models.TextField):
