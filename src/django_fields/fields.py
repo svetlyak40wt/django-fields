@@ -124,34 +124,38 @@ class BaseEncryptedDateField(BaseEncryptedField):
         return 'CharField'
 
     def formfield(self, **kwargs):
-        defaults = {'widget': self.form_widget}
+        defaults = {'widget': self.form_widget,'form_class':self.form_field}
         defaults.update(kwargs)
         return super(BaseEncryptedDateField, self).formfield(**defaults)
 
     def to_python(self, value):
         # value is either a date or a string in the format "YYYY:MM:DD"
-        if isinstance(value, self.date_class):
+
+        if value in fields.EMPTY_VALUES:
             date_value = value
         else:
-            date_text = super(BaseEncryptedDateField, self).to_python(value)
-            date_value = self.date_class(*map(int, date_text.split(':')))
+            if isinstance(value, self.date_class):
+                date_value = value
+            else:
+                date_text = super(BaseEncryptedDateField, self).to_python(value)
+                date_value = self.date_class(*map(int, date_text.split(':')))
         return date_value
 
     # def get_prep_value(self, value):
-    def get_db_prep_value(self, value, connection=None, prepared=False):
+    def get_db_prep_value(self, value):
         # value is a date_class.
         # We need to convert it to a string in the format "YYYY:MM:DD"
-        date_text = value.strftime(self.save_format)
-        return super(BaseEncryptedDateField, self).get_db_prep_value(
-            date_text,
-            connection=connection,
-            prepared=prepared,
-        )
+        if value:
+            date_text = value.strftime(self.save_format)
+        else:
+            date_text = None
+        return super(BaseEncryptedDateField, self).get_db_prep_value(date_text)
 
 
 class EncryptedDateField(BaseEncryptedDateField):
     __metaclass__ = models.SubfieldBase
     form_widget = forms.DateInput
+    form_field = forms.DateField
     save_format = "%Y:%m:%d"
     date_class = datetime.date
     max_raw_length = 10  # YYYY:MM:DD
@@ -161,6 +165,7 @@ class EncryptedDateTimeField(BaseEncryptedDateField):
     # FIXME:  This doesn't handle time zones, but Python doesn't really either.
     __metaclass__ = models.SubfieldBase
     form_widget = forms.DateTimeInput
+    form_field = forms.DateTimeField
     save_format = "%Y:%m:%d:%H:%M:%S:%f"
     date_class = datetime.datetime
     max_raw_length = 26  # YYYY:MM:DD:hh:mm:ss:micros
@@ -244,7 +249,7 @@ class PickleField(models.TextField):
             return value
 
 
-class EncryptedPhoneNumberField(BaseEncryptedField):
+class EncryptedUSPhoneNumberField(BaseEncryptedField):
     __metaclass__ = models.SubfieldBase
 
     def get_internal_type(self):
