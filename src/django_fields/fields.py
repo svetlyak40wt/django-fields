@@ -240,3 +240,31 @@ class PickleField(models.TextField):
         # string saved to PickleField.
         except ValueError:
             return value
+
+
+class EncryptedPhoneNumberField(enc_fields.BaseEncryptedField):
+    __metaclass__ = models.SubfieldBase
+
+    def get_internal_type(self):
+        return "CharField"
+
+    def formfield(self, **kwargs):
+        from django.contrib.localflavor.us.forms import USPhoneNumberField
+        defaults = {'form_class': USPhoneNumberField}
+        defaults.update(kwargs)
+        return super(EncryptedPhoneNumberField, self).formfield(**defaults)
+
+
+class EncryptedEmailField(enc_fields.BaseEncryptedField):
+    __metaclass__ = models.SubfieldBase
+    description = _("E-mail address")
+
+    def get_internal_type(self):
+        return "CharField"
+
+    def formfield(self, **kwargs):
+        from django.forms import EmailField
+        defaults = {'form_class': EmailField, 'max_length': self.unencrypted_length}
+        defaults.update(kwargs)
+        return super(EncryptedEmailField, self).formfield(**defaults)
+
