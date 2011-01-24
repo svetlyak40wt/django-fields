@@ -8,6 +8,8 @@ from django import forms
 from django.db import models
 from django.conf import settings
 from django.utils.encoding import smart_str, force_unicode
+from django.utils.translation import ugettext_lazy as _
+
 
 
 USE_CPICKLE = getattr(settings, 'USE_CPICKLE', False)
@@ -242,7 +244,7 @@ class PickleField(models.TextField):
             return value
 
 
-class EncryptedPhoneNumberField(enc_fields.BaseEncryptedField):
+class EncryptedPhoneNumberField(BaseEncryptedField):
     __metaclass__ = models.SubfieldBase
 
     def get_internal_type(self):
@@ -255,7 +257,7 @@ class EncryptedPhoneNumberField(enc_fields.BaseEncryptedField):
         return super(EncryptedPhoneNumberField, self).formfield(**defaults)
 
 
-class EncryptedEmailField(enc_fields.BaseEncryptedField):
+class EncryptedEmailField(BaseEncryptedField):
     __metaclass__ = models.SubfieldBase
     description = _("E-mail address")
 
