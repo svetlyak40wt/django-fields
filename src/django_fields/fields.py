@@ -5,6 +5,7 @@ import string
 import sys
 
 from django import forms
+from django.forms import fields
 from django.db import models
 from django.conf import settings
 from django.utils.encoding import smart_str, force_unicode
