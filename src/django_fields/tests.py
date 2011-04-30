@@ -327,7 +327,7 @@ class EncryptEmailTests(unittest.TestCase):
 
     def _get_encrypted_email(self, id):
         cursor = connection.cursor()
-        cursor.execute("select email from django_fields_encobject where id = %s", [id,])
+        cursor.execute("select email from django_fields_emailobject where id = %s", [id,])
         emails = map(lambda x: x[0], cursor.fetchall())
         self.assertEqual(len(emails), 1)  # only one
         return emails[0]
