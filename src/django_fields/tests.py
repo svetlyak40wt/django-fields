@@ -290,11 +290,6 @@ class EncryptEmailTests(unittest.TestCase):
         obj = EmailObject.objects.get(id=obj.id)
         self.assertEqual(email, obj.email)
 
-    def test_field_too_long(self):
-        email = 'a' * (EmailObject.max_email + 1)
-        obj = EmailObject(email = email)
-        self.assertRaises(Exception, obj.save)
-
     def test_UTF8(self):
         email = u'совершенно@секретно.com'
         obj = EmailObject(email = email)
