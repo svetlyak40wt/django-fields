@@ -22,13 +22,13 @@ class BaseEncryptedField(models.Field):
        You can find the original at http://www.djangosnippets.org/snippets/1095/'''
 
     def __init__(self, *args, **kwargs):
-        cipher = kwargs.pop('cipher', 'AES')
+        self.cipher_type = kwargs.pop('cipher', 'AES')
         try:
-            imp = __import__('Crypto.Cipher', globals(), locals(), [cipher], -1)
+            imp = __import__('Crypto.Cipher', globals(), locals(), [self.cipher_type], -1)
         except:
-            imp = __import__('Crypto.Cipher', globals(), locals(), [cipher])
-        self.cipher = getattr(imp, cipher).new(settings.SECRET_KEY[:32])
-        self.prefix = '$%s$' % cipher
+            imp = __import__('Crypto.Cipher', globals(), locals(), [self.cipher_type])
+        self.cipher = getattr(imp, self.cipher_type).new(settings.SECRET_KEY[:32])
+        self.prefix = '$%s$' % self.cipher_type
 
         max_length = kwargs.get('max_length', 40)
         self.unencrypted_length = max_length
@@ -240,3 +240,19 @@ class PickleField(models.TextField):
         # string saved to PickleField.
         except ValueError:
             return value
+
+try:
+    from south.modelsinspector import add_introspection_rules
+    add_introspection_rules([
+        (
+            [BaseEncryptedField, EncryptedDateField, BaseEncryptedDateField, EncryptedCharField, EncryptedTextField,
+             EncryptedFloatField, EncryptedDateTimeField, BaseEncryptedNumberField, EncryptedIntField, EncryptedLongField],
+            [],
+            {
+                'cipher':('cipher_type', {}),
+            },
+        ),
+    ], ["^django_fields\.fields\..+?Field"])
+    add_introspection_rules([], ["^django_fields\.fields\.PickleField"])
+except ImportError:
+    pass
