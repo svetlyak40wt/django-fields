@@ -248,6 +248,8 @@ class PickleField(models.TextField):
         # string saved to PickleField.
         except ValueError:
             return value
+        except EOFError:
+            return value
 
 
 class EncryptedUSPhoneNumberField(BaseEncryptedField):

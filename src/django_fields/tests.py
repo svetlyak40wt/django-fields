@@ -260,6 +260,13 @@ class TestPickleField(unittest.TestCase):
             obj = PickleObject.objects.get(name=name)
             self.assertEqual(obj.data, data)
 
+    def test_empty_string(self):
+        value = ''
+
+        obj = PickleObject.objects.create(name='default', data=value)
+        self.assertEqual(PickleObject.objects.count(), 1)
+
+        self.assertEqual(obj.data, value)
 
 
 
