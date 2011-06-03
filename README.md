@@ -28,3 +28,6 @@ Contributors
   his [django snippet](http://www.djangosnippets.org/snippets/1095/) for encrypted
   fields. After some fixes, this snippet works as supposed.
 * John Morrissey — for fixing bug in PickleField.
+* Joe Jasinski — different fixes and new fields for encripted email and US Phone.
+* Colin MacDonald — for many encripted fields added.
+* Igor Davydenko — PickleField.
