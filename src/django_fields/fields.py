@@ -150,7 +150,7 @@ class BaseEncryptedDateField(BaseEncryptedField):
             date_text = value.strftime(self.save_format)
         else:
             date_text = None
-        return super(BaseEncryptedDateField, self).get_db_prep_value(date_text, connection=None, prepared)
+        return super(BaseEncryptedDateField, self).get_db_prep_value(date_text, connection, prepared)
 
 
 class EncryptedDateField(BaseEncryptedDateField):
