@@ -33,7 +33,7 @@ class BaseEncryptedField(models.Field):
         self.cipher = getattr(imp, self.cipher_type).new(settings.SECRET_KEY[:32])
         self.prefix = '$%s$' % self.cipher_type
 
-        max_length = kwargs.get('max_length', 40)
+        max_length = kwargs.pop('unencrypted_max_length', 40)
         self.unencrypted_length = max_length
         # always add at least 2 to the max_length:
         #     one for the null byte, one for padding
@@ -41,7 +41,8 @@ class BaseEncryptedField(models.Field):
         mod = max_length % self.cipher.block_size
         if mod > 0:
             max_length += self.cipher.block_size - mod
-        kwargs['max_length'] = max_length * 2 + len(self.prefix)
+        # if specified max_length should work as expected
+        kwargs['max_length'] = kwargs.get('max_length', max_length * 2 + len(self.prefix))
 
         models.Field.__init__(self, *args, **kwargs)
 
@@ -150,7 +151,9 @@ class BaseEncryptedDateField(BaseEncryptedField):
             date_text = value.strftime(self.save_format)
         else:
             date_text = None
-        return super(BaseEncryptedDateField, self).get_db_prep_value(date_text, connection, prepared)
+        return super(BaseEncryptedDateField,
+                     self).get_db_prep_value(date_text, connection=connection,
+                                             prepared=prepared)
 
 
 class EncryptedDateField(BaseEncryptedDateField):

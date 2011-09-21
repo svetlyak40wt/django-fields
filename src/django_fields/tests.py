@@ -7,15 +7,20 @@ import unittest
 from django.db import connection
 from django.db import models
 
-from fields import (EncryptedCharField, EncryptedDateField, 
-                    EncryptedDateTimeField, EncryptedIntField, 
+from fields import (EncryptedCharField, EncryptedDateField,
+                    EncryptedDateTimeField, EncryptedIntField,
                     EncryptedLongField, EncryptedFloatField, PickleField,
                     EncryptedUSPhoneNumberField, EncryptedEmailField)
 
 class EncObject(models.Model):
     max_password = 20
-    password = EncryptedCharField(max_length=max_password)
+    password = EncryptedCharField(unencrypted_max_length=max_password)
 
+class MaxLengthEncObject(models.Model):
+    max_password = 20
+    max_encrypted_length = 70
+    password = EncryptedCharField(unencrypted_max_length=max_password,
+                                  max_length=max_encrypted_length)
 
 class EncDate(models.Model):
     important_date = EncryptedDateField()
@@ -43,7 +48,7 @@ class PickleObject(models.Model):
     data = PickleField()
 
 
-class EmailObject(models.Model): 
+class EmailObject(models.Model):
     max_email = 255
     email = EncryptedEmailField()
 
@@ -79,6 +84,15 @@ class EncryptTests(unittest.TestCase):
         obj = EncObject.objects.get(id=obj.id)
         self.assertEqual(password, obj.password)
 
+    def test_max_length(self):
+        self.assertEqual(EncObject._meta.get_field('password').unencrypted_length,
+                        EncObject.max_password)
+        self.assertEqual(EncObject._meta.get_field('password').max_length, 69)
+        self.assertEqual(MaxLengthEncObject._meta.get_field('password').max_length,
+                        MaxLengthEncObject.max_encrypted_length)
+        self.assertEqual(MaxLengthEncObject._meta.get_field('password').unencrypted_length,
+                        MaxLengthEncObject.max_password)
+
     def test_field_too_long(self):
         password = 'a' * (EncObject.max_password + 1)
         obj = EncObject(password = password)
@@ -90,7 +104,7 @@ class EncryptTests(unittest.TestCase):
         obj.save()
         obj = EncObject.objects.get(id=obj.id)
         self.assertEqual(password, obj.password)
-    
+
     def test_consistent_encryption(self):
         """
         The same password should not encrypt the same way twice.
@@ -102,7 +116,7 @@ class EncryptTests(unittest.TestCase):
         for pwd_length in range(1,21):  # 1-20 inclusive
             enc_pwd_1, enc_pwd_2 = self._get_two_passwords(pwd_length)
             self.assertNotEqual(enc_pwd_1, enc_pwd_2)
-    
+
     def test_minimum_padding(self):
         """
         There should always be at least two chars of padding.
@@ -303,7 +317,7 @@ class EncryptEmailTests(unittest.TestCase):
         obj.save()
         obj = EmailObject.objects.get(id=obj.id)
         self.assertEqual(email, obj.email)
-    
+
     def test_consistent_encryption(self):
         """
         The same password should not encrypt the same way twice.
@@ -315,7 +329,7 @@ class EncryptEmailTests(unittest.TestCase):
         for email_length in range(1,21):  # 1-20 inclusive
             enc_email_1, enc_email_2 = self._get_two_emails(email_length)
             self.assertNotEqual(enc_email_1, enc_email_2)
-    
+
     def test_minimum_padding(self):
         """
         There should always be at least two chars of padding.
