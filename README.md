@@ -49,4 +49,4 @@ Contributors
 * Joe Jasinski — different fixes and new fields for encrypted email and US Phone.
 * Colin MacDonald — for many encrypted fields added.
 * Igor Davydenko — PickleField.
-* Bryan Helmig - encrypted file field.
+* Bryan Helmig — encrypted file field.

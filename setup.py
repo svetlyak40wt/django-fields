@@ -1,13 +1,13 @@
 from setuptools import setup, find_packages
 setup(
     name = 'django-fields',
-    version = '0.1.3',
+    version = '0.1.4',
     description = 'Django-fields is an application which includes different kinds of models fields.',
     keywords = 'django apps tools collection',
     license = 'New BSD License',
     author = 'Alexander Artemenko',
     author_email = 'svetlyak.40wt@gmail.com',
-    url = 'http://github.com/svetlyak40wt/django-fields/',
+    url = 'http://github.com/bryanhelmig/django-fields/',
     install_requires = ['pycrypto', ],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
