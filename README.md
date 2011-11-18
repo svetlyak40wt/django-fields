@@ -3,8 +3,24 @@ Introduction
 
 Django-fields is an application which includes different kinds of models fields.
 
-Right now, application contains two fields with encryption support:
-EncryptedCharField and EncryptedTextField.
+Right now, the application contains these fields with encryption support:
+
+* EncryptedCharField
+* EncryptedDateField
+* EncryptedDateTimeField
+* EncryptedEmailField
+* EncryptedFileField
+* EncryptedFloatField
+* EncryptedIntField
+* EncryptedLongField
+* EncryptedTextField
+* EncryptedUSPhoneNumberField
+
+They are each used in a similar fashion to their native, non-encrypted counterparts.
+
+One thing to remember is `.filter()`, `.order_by()`, etc... methods on a queryset will
+not work due to the text being encrypted in the database. Any filtering, sorting, etc...
+on encrypted fields will need to be done in memory.
 
 Requirements
 -----------
@@ -19,7 +35,9 @@ Under Ubuntu, just do:
 Examples
 --------
 
-Examples can be found at the `examples` directory. Look at the, `tests.py`.
+Examples can be found at the `examples` directory. Look at `tests.py`.
+
+Also check out the doc strings for various special use cases (especially EncryptedFileField).
 
 Contributors
 ------------
