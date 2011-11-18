@@ -11,6 +11,7 @@ from django.conf import settings
 from django.utils.encoding import smart_str, force_unicode
 from django.utils.translation import ugettext_lazy as _
 
+from django.core.files.base import ContentFile
 
 
 USE_CPICKLE = getattr(settings, 'USE_CPICKLE', False)
@@ -279,6 +280,88 @@ class EncryptedEmailField(BaseEncryptedField):
         return super(EncryptedEmailField, self).formfield(**defaults)
 
 
+class EncryptedFieldFile(models.fields.files.FieldFile):
+    """
+    TODO:
+        Should probably use chunks (if available) to encrypt/decrypt instead of 
+        loading in memory.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        super(EncryptedFieldFile, self).__init__(*args, **kwargs)
+        
+        self.cipher_type = kwargs.pop('cipher', 'AES')
+        try:
+            imp = __import__('Crypto.Cipher', globals(), locals(), [self.cipher_type], -1)
+        except:
+            imp = __import__('Crypto.Cipher', globals(), locals(), [self.cipher_type])
+        self.cipher = getattr(imp, self.cipher_type).new(settings.SECRET_KEY[:32])
+        self.prefix = '$%s$' % self.cipher_type
+
+    def _get_padding(self, value):
+        # We always want at least 2 chars of padding (including zero byte),
+        # so we could have up to block_size + 1 chars.
+        mod = (len(value) + 2) % self.cipher.block_size
+        return self.cipher.block_size - mod + 2
+    
+    def encrypt(self, content):
+        """
+        Returns an encrypted string based ContentFile.
+        """
+        value = content.read()
+        
+        value = base64.encodestring(value)
+        
+        padding  = self._get_padding(value)
+        if padding > 0:
+            value += "\0" + ''.join([random.choice(string.printable)
+                for index in range(padding-1)])
+        value = self.prefix + binascii.b2a_hex(self.cipher.encrypt(value))
+        
+        return ContentFile(value)
+    
+    def decrypt(self, content=None):
+        """
+        Returns a decrypted binary based ContentFile.
+        """
+        if not content:
+            self.open(mode='rb')
+            value = self.read()
+        else:
+            value = content.read()
+        
+        value = self.cipher.decrypt(
+                binascii.a2b_hex(value[len(self.prefix):])
+            ).split('\0')[0]
+        
+        value = base64.decodestring(value)
+        
+        return ContentFile(value)
+    
+    def save(self, name, content, save=True):
+        content = self.encrypt(content)
+        super(EncryptedFieldFile, self).save(name, content, save)
+
+
+class EncryptedFileField(models.FileField):
+    """
+    Encrypts a file via `EncryptedFieldFile` before it is saved to the storage backend.
+
+    Uploading or adding a file is the same as a normal FileField.
+    
+    Downloading is different, as `instance.attachment.url` will give you a useless link
+    to an encrypted file. You'll need to do something like this to stream an unencrypted 
+    file back to the user:
+    
+        path = instance.attachment.path
+        response = HttpResponse(FileWrapper(instance.attachment.decrypt()), content_type=mimetypes.guess_type(path))
+        response['Content-Disposition'] = 'attachment; filename=' + path.split('/')[-1]
+        return response
+    
+    """
+    attr_class = EncryptedFieldFile
+
+
 try:
     from south.modelsinspector import add_introspection_rules
     add_introspection_rules([
@@ -286,7 +369,7 @@ try:
             [
                 BaseEncryptedField, EncryptedDateField, BaseEncryptedDateField, EncryptedCharField, EncryptedTextField,
                 EncryptedFloatField, EncryptedDateTimeField, BaseEncryptedNumberField, EncryptedIntField, EncryptedLongField,
-                EncryptedUSPhoneNumberField, EncryptedEmailField,
+                EncryptedUSPhoneNumberField, EncryptedEmailField, EncryptedFileField,
             ],
             [],
             {

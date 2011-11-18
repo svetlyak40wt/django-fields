@@ -10,7 +10,8 @@ from django.db import models
 from fields import (EncryptedCharField, EncryptedDateField, 
                     EncryptedDateTimeField, EncryptedIntField, 
                     EncryptedLongField, EncryptedFloatField, PickleField,
-                    EncryptedUSPhoneNumberField, EncryptedEmailField)
+                    EncryptedUSPhoneNumberField, EncryptedEmailField,
+                    EncryptedFileField)
 
 class EncObject(models.Model):
     max_password = 20
@@ -50,6 +51,10 @@ class EmailObject(models.Model):
 
 class USPhoneNumberField(models.Model):
     phone = EncryptedUSPhoneNumberField()
+
+
+class EncFile(models.Model):
+    attachment = EncryptedFileField()
 
 
 class EncryptTests(unittest.TestCase):
@@ -347,3 +352,11 @@ class EncryptEmailTests(unittest.TestCase):
         return enc_email_1, enc_email_2
 
 
+class EncryptFileTests(unittest.TestCase):
+
+    def setUp(self):
+        EncFile.objects.all().delete()
+    
+    def test_placeholder(self):
+        """ coming soon... """
+        pass
