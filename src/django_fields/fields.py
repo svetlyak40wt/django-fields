@@ -142,7 +142,6 @@ class BaseEncryptedDateField(BaseEncryptedField):
                 date_value = self.date_class(*map(int, date_text.split(':')))
         return date_value
 
-    # def get_prep_value(self, value):
     def get_db_prep_value(self, value, connection=None, prepared=False):
         # value is a date_class.
         # We need to convert it to a string in the format "YYYY:MM:DD"
@@ -150,7 +149,11 @@ class BaseEncryptedDateField(BaseEncryptedField):
             date_text = value.strftime(self.save_format)
         else:
             date_text = None
-        return super(BaseEncryptedDateField, self).get_db_prep_value(date_text, connection, prepared)
+        return super(BaseEncryptedDateField, self).get_db_prep_value(
+            date_text,
+            connection=connection,
+            prepared=prepared
+        )
 
 
 class EncryptedDateField(BaseEncryptedDateField):
