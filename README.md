@@ -16,10 +16,11 @@ Under Ubuntu, just do:
 
     sudo apt-get install python-crypto
 
-Examples
---------
+How to run tests
+----------------
 
 Examples can be found at the `examples` directory. Look at the, `tests.py`.
+Same project is used to run unittests. To run them, just fire `./run-tests.sh`.
 
 Contributors
 ------------

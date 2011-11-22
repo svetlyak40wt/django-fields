@@ -9,3 +9,5 @@ bin/
 develop-eggs/
 parts/
 test.sqlite
+env
+pip-log.txt
