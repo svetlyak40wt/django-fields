@@ -65,9 +65,12 @@ class BaseEncryptedField(models.Field):
         return value
 
     def get_db_prep_value(self, value, connection=None, prepared=False):
+        if value is None:
+            return None
+
         value = smart_str(value)
 
-        if value is not None and not self._is_encrypted(value):
+        if not self._is_encrypted(value):
             padding  = self._get_padding(value)
             if padding > 0:
                 value += "\0" + ''.join([random.choice(string.printable)
