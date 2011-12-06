@@ -20,6 +20,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
     package_dir = {'': 'src'},
+    zip_safe = True,
     packages = ['django_fields'],
     #include_package_data = True,
 )
