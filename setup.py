@@ -8,6 +8,7 @@ setup(
     author = 'Alexander Artemenko',
     author_email = 'svetlyak.40wt@gmail.com',
     url = 'http://github.com/bryanhelmig/django-fields/',
+    download_url='https://github.com/bryanhelmig/django-fields/',
     install_requires = ['pycrypto', ],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
