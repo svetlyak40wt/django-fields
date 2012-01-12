@@ -11,14 +11,13 @@ from django.conf import settings
 from django.utils.encoding import smart_str, force_unicode
 from django.utils.translation import ugettext_lazy as _
 
-
-
-USE_CPICKLE = getattr(settings, 'USE_CPICKLE', False)
-
-if USE_CPICKLE:
-    import cPickle as pickle
-else:
+if settings.DEBUG:
     import pickle
+else:
+    try:
+        import cPickle as pickle
+    except:
+        import pickle
 
 class BaseEncryptedField(models.Field):
     '''This code is based on the djangosnippet #1095
