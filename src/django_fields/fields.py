@@ -12,13 +12,9 @@ from django.conf import settings
 from django.utils.encoding import smart_str, force_unicode
 from django.utils.translation import ugettext_lazy as _
 
-
-try:
-    USE_CPICKLE = settings.USE_CPICKLE
+if hasattr(settings, 'USE_CPICKLE'):
     warnings.warn("The USE_CPICKLE options is now obsolete. cPickle will always
     be used unless it cannot be found or DEBUG=True",DeprecationWarning))
-except AttributeError:
-    pass
 
 if settings.DEBUG:
     import pickle
