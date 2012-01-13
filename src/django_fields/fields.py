@@ -3,6 +3,7 @@ import datetime
 import random
 import string
 import sys
+import warnings
 
 from django import forms
 from django.forms import fields
@@ -11,14 +12,17 @@ from django.conf import settings
 from django.utils.encoding import smart_str, force_unicode
 from django.utils.translation import ugettext_lazy as _
 
+if hasattr(settings, 'USE_CPICKLE'):
+    warnings.warn("The USE_CPICKLE options is now obsolete. cPickle will always
+    be used unless it cannot be found or DEBUG=True",DeprecationWarning))
 
-
-USE_CPICKLE = getattr(settings, 'USE_CPICKLE', False)
-
-if USE_CPICKLE:
-    import cPickle as pickle
-else:
+if settings.DEBUG:
     import pickle
+else:
+    try:
+        import cPickle as pickle
+    except:
+        import pickle
 
 class BaseEncryptedField(models.Field):
     '''This code is based on the djangosnippet #1095
