@@ -361,9 +361,9 @@ class EncryptedFileField(models.FileField):
     
     """
     def __init__(self, *args, **kwargs):
-        super(EncryptedFileField, self).__init__(*args, **kwargs)
         # this is ignored, and is hack
         self.cipher_type = kwargs.pop('cipher', 'AES')
+        super(EncryptedFileField, self).__init__(*args, **kwargs)
 
     attr_class = EncryptedFieldFile
 
