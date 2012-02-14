@@ -14,7 +14,7 @@ from django.utils.translation import ugettext_lazy as _
 
 if hasattr(settings, 'USE_CPICKLE'):
     warnings.warn("The USE_CPICKLE options is now obsolete. cPickle will always "
-    "be used unless it cannot be found or DEBUG=True",DeprecationWarning))
+    "be used unless it cannot be found or DEBUG=True",DeprecationWarning)
 
 if settings.DEBUG:
     import pickle
