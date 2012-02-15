@@ -6,6 +6,9 @@ Django-fields is an application which includes different kinds of models fields.
 Right now, application contains two fields with encryption support:
 EncryptedCharField and EncryptedTextField.
 
+This project uses Travis for continuous integration: [![Build Status](https://secure.travis-ci.org/svetlyak40wt/django-fields.png)](http://travis-ci.org/svetlyak40wt/django-fields)
+
+
 ChangeLog
 ---------
 
