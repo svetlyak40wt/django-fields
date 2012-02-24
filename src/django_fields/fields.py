@@ -99,7 +99,7 @@ class EncryptedCharField(BaseEncryptedField):
         return "CharField"
 
     def formfield(self, **kwargs):
-        defaults = {'max_length': self.max_length}
+        defaults = {'max_length': self.unencrypted_length}
         defaults.update(kwargs)
         return super(EncryptedCharField, self).formfield(**defaults)
 
