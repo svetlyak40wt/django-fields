@@ -269,7 +269,7 @@ class EncryptedUSPhoneNumberField(BaseEncryptedField):
         from django.contrib.localflavor.us.forms import USPhoneNumberField
         defaults = {'form_class': USPhoneNumberField}
         defaults.update(kwargs)
-        return super(EncryptedPhoneNumberField, self).formfield(**defaults)
+        return super(EncryptedUSPhoneNumberField, self).formfield(**defaults)
 
 
 class EncryptedEmailField(BaseEncryptedField):
