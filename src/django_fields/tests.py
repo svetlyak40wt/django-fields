@@ -13,7 +13,8 @@ from .fields import (
     EncryptedCharField, EncryptedDateField,
     EncryptedDateTimeField, EncryptedIntField,
     EncryptedLongField, EncryptedFloatField, PickleField,
-    EncryptedUSPhoneNumberField, EncryptedEmailField,
+    EncryptedUSPhoneNumberField, EncryptedUSSocialSecurityNumberField,
+    EncryptedEmailField,
 )
 
 from .models import ModelWithPrivateFields
@@ -58,6 +59,8 @@ class EmailObject(models.Model):
 class USPhoneNumberField(models.Model):
     phone = EncryptedUSPhoneNumberField()
 
+class USSocialSecurityNumberField(models.Model):
+    ssn = EncryptedUSSocialSecurityNumberField()
 
 class EncryptTests(unittest.TestCase):
 
