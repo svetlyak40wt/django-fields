@@ -269,10 +269,10 @@ class EncryptedUSPhoneNumberField(BaseEncryptedField):
         from django.contrib.localflavor.us.forms import USPhoneNumberField
         defaults = {'form_class': USPhoneNumberField}
         defaults.update(kwargs)
-        return super(EncryptedPhoneNumberField, self).formfield(**defaults)
+        return super(EncryptedUSPhoneNumberField, self).formfield(**defaults)
 
 class EncryptedUSSocialSecurityNumberField(BaseEncryptedField):
-    __metaclass__ = modeld.SubfieldBase
+    __metaclass__ = models.SubfieldBase
     
     def get_internal_type(self):
         return "CharField"
