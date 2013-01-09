@@ -1,6 +1,5 @@
 import binascii
 import datetime
-import random
 import string
 import sys
 import warnings
@@ -11,6 +10,7 @@ from django.db import models
 from django.conf import settings
 from django.utils.encoding import smart_str, force_unicode
 from django.utils.translation import ugettext_lazy as _
+from Crypto.Random import random
 
 if hasattr(settings, 'USE_CPICKLE'):
     warnings.warn("The USE_CPICKLE options is now obsolete. cPickle will always "
