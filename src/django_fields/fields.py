@@ -74,18 +74,11 @@ class BaseEncryptedField(models.Field):
         if value is not None and not self._is_encrypted(value):
             padding  = self._get_padding(value)
             if padding > 0:
-                value += "\0" + ''.join([random.choice(string.printable)
+                #value += "\0" + ''.join([random.choice(string.printable)
+                value += "\0" + ''.join(['\1'
                     for index in range(padding-1)])
             value = self.prefix + binascii.b2a_hex(self.cipher.encrypt(value))
         return value
-
-    def get_db_prep_lookup(self, lookup_type, value, connection=None, prepared=False):
-        if lookup_type == 'exact':
-            return self.get_db_prep_value(value)
-        elif lookup_type == 'in':
-            return [self.get_db_prep_value(v) for v in value]
-        else:
-            raise TypeError('Lookup type %r not supported.' % lookup_type)
 
 
 class EncryptedTextField(BaseEncryptedField):
