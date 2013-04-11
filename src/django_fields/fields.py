@@ -79,6 +79,14 @@ class BaseEncryptedField(models.Field):
             value = self.prefix + binascii.b2a_hex(self.cipher.encrypt(value))
         return value
 
+    def get_db_prep_lookup(self, lookup_type, value, connection=None, prepared=False):
+        if lookup_type == 'exact':
+            return self.get_db_prep_value(value)
+        elif lookup_type == 'in':
+            return [self.get_db_prep_value(v) for v in value]
+        else:
+            raise TypeError('Lookup type %r not supported.' % lookup_type)
+
 
 class EncryptedTextField(BaseEncryptedField):
     __metaclass__ = models.SubfieldBase
