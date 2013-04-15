@@ -58,7 +58,6 @@ class BaseEncryptedField(models.Field):
         mod = (len(value) + 2) % self.cipher.block_size
         return self.cipher.block_size - mod + 2
 
-
     def to_python(self, value):
         if self._is_encrypted(value):
             return force_unicode(
@@ -69,6 +68,9 @@ class BaseEncryptedField(models.Field):
         return value
 
     def get_db_prep_value(self, value, connection=None, prepared=False):
+        if value is None:
+            return None
+
         value = smart_str(value)
 
         if value is not None and not self._is_encrypted(value):
@@ -200,8 +202,10 @@ class BaseEncryptedNumberField(BaseEncryptedField):
             number = self.number_type(number_text)
         return number
 
-    # def get_prep_value(self, value):
     def get_db_prep_value(self, value, connection=None, prepared=False):
+        if value is None:
+            return None
+
         number_text = self.format_string % value
         return super(BaseEncryptedNumberField, self).get_db_prep_value(
             number_text,
