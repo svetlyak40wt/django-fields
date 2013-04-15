@@ -195,7 +195,7 @@ class BaseEncryptedNumberField(BaseEncryptedField):
 
     def to_python(self, value):
         # value is either an int or a string of an integer
-        if isinstance(value, self.number_type):
+        if isinstance(value, self.number_type) or value is None:
             number = value
         else:
             number_text = super(BaseEncryptedNumberField, self).to_python(value)
