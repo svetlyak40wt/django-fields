@@ -76,8 +76,7 @@ class BaseEncryptedField(models.Field):
         if value is not None and not self._is_encrypted(value):
             padding  = self._get_padding(value)
             if padding > 0:
-                #value += "\0" + ''.join([random.choice(string.printable)
-                value += "\0" + ''.join(['\1'
+                value += "\0" + ''.join([random.choice(string.printable)
                     for index in range(padding-1)])
             value = self.prefix + binascii.b2a_hex(self.cipher.encrypt(value))
         return value
