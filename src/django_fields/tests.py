@@ -13,7 +13,8 @@ from .fields import (
     EncryptedCharField, EncryptedDateField,
     EncryptedDateTimeField, EncryptedIntField,
     EncryptedLongField, EncryptedFloatField, PickleField,
-    EncryptedUSPhoneNumberField, EncryptedEmailField,
+    EncryptedUSPhoneNumberField, EncryptedUSSocialSecurityNumberField,
+    EncryptedEmailField,
 )
 
 from .models import ModelWithPrivateFields
@@ -58,6 +59,14 @@ class EmailObject(models.Model):
 class USPhoneNumberField(models.Model):
     phone = EncryptedUSPhoneNumberField()
 
+class USSocialSecurityNumberField(models.Model):
+    ssn = EncryptedUSSocialSecurityNumberField()
+
+class CipherEncObject(models.Model):
+    max_password = 20
+    password = EncryptedCharField(
+        max_length=max_password,
+        block_type = 'MODE_CBC')
 
 class EncryptTests(unittest.TestCase):
 
@@ -78,6 +87,22 @@ class EncryptTests(unittest.TestCase):
         encrypted_password = self._get_encrypted_password(obj.id)
         self.assertNotEqual(encrypted_password, password)
         self.assertTrue(encrypted_password.startswith('$AES$'))
+        
+    def test_encryption_w_cipher(self):
+        """
+        Test that the database values are actually encrypted when using
+        non-default cipher types.
+        """
+        password = 'this is a password!!'  # 20 chars
+        obj = CipherEncObject(password = password)
+        obj.save()
+        # The value from the retrieved object should be the same...
+        obj = CipherEncObject.objects.get(id=obj.id)
+        self.assertEqual(password, obj.password)
+        # ...but the value in the database should not
+        encrypted_password = self._get_encrypted_password_cipher(obj.id)
+        self.assertNotEqual(encrypted_password, password)
+        self.assertTrue(encrypted_password.startswith('$AES$MODE_CBC$'))
 
     def test_max_field_length(self):
         password = 'a' * EncObject.max_password
@@ -135,6 +160,13 @@ class EncryptTests(unittest.TestCase):
     def _get_encrypted_password(self, id):
         cursor = connection.cursor()
         cursor.execute("select password from django_fields_encobject where id = %s", [id,])
+        passwords = map(lambda x: x[0], cursor.fetchall())
+        self.assertEqual(len(passwords), 1)  # only one
+        return passwords[0]
+    
+    def _get_encrypted_password_cipher(self, id):
+        cursor = connection.cursor()
+        cursor.execute("select password from django_fields_cipherencobject where id = %s", [id,])
         passwords = map(lambda x: x[0], cursor.fetchall())
         self.assertEqual(len(passwords), 1)  # only one
         return passwords[0]
