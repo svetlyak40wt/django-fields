@@ -1,6 +1,5 @@
 import binascii
 import datetime
-import random
 import string
 import sys
 import warnings
@@ -11,6 +10,8 @@ from django.db import models
 from django.conf import settings
 from django.utils.encoding import smart_str, force_unicode
 from django.utils.translation import ugettext_lazy as _
+from Crypto import Random
+from Crypto.Random import random
 
 if hasattr(settings, 'USE_CPICKLE'):
     warnings.warn("The USE_CPICKLE options is now obsolete. cPickle will always "
@@ -30,12 +31,22 @@ class BaseEncryptedField(models.Field):
 
     def __init__(self, *args, **kwargs):
         self.cipher_type = kwargs.pop('cipher', 'AES')
+        self.block_type = kwargs.pop('block_type', None)
         try:
             imp = __import__('Crypto.Cipher', globals(), locals(), [self.cipher_type], -1)
         except:
             imp = __import__('Crypto.Cipher', globals(), locals(), [self.cipher_type])
-        self.cipher = getattr(imp, self.cipher_type).new(settings.SECRET_KEY[:32])
-        self.prefix = '$%s$' % self.cipher_type
+        self.cipher_object = getattr(imp, self.cipher_type)
+        if self.block_type:
+            self.prefix = '$%s$%s$' % (self.cipher_type, self.block_type)
+            self.iv = Random.new().read(self.cipher_object.block_size)
+            self.cipher = self.cipher_object.new(
+                settings.SECRET_KEY[:32],
+                getattr(self.cipher_object, self.block_type),
+                self.iv)
+        else:
+            self.cipher = self.cipher_object.new(settings.SECRET_KEY[:32])
+            self.prefix = '$%s$' % self.cipher_type
 
         max_length = kwargs.get('max_length', 40)
         self.unencrypted_length = max_length
@@ -61,9 +72,18 @@ class BaseEncryptedField(models.Field):
 
     def to_python(self, value):
         if self._is_encrypted(value):
+            if self.block_type:
+                self.iv = binascii.a2b_hex(value[len(self.prefix):])[:len(self.iv)]
+                self.cipher = self.cipher_object.new(
+                    settings.SECRET_KEY[:32],
+                    getattr(self.cipher_object, self.block_type),
+                    self.iv)
+                decrypt_value = binascii.a2b_hex(value[len(self.prefix):])[len(self.iv):]
+            else:
+                decrypt_value = binascii.a2b_hex(value[len(self.prefix):])
             return force_unicode(
                 self.cipher.decrypt(
-                    binascii.a2b_hex(value[len(self.prefix):])
+                    decrypt_value
                 ).split('\0')[0]
             )
         return value
@@ -79,7 +99,10 @@ class BaseEncryptedField(models.Field):
             if padding > 0:
                 value += "\0" + ''.join([random.choice(string.printable)
                     for index in range(padding-1)])
-            value = self.prefix + binascii.b2a_hex(self.cipher.encrypt(value))
+            if self.block_type:
+                value = self.prefix + binascii.b2a_hex(self.iv + self.cipher.encrypt(value))
+            else:
+                value = self.prefix + binascii.b2a_hex(self.cipher.encrypt(value))
         return value
 
 
