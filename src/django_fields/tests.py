@@ -21,7 +21,7 @@ from .models import ModelWithPrivateFields
 
 class EncObject(models.Model):
     max_password = 20
-    password = EncryptedCharField(max_length=max_password)
+    password = EncryptedCharField(max_length=max_password, null=True)
 
 
 class EncDate(models.Model):
@@ -118,6 +118,17 @@ class EncryptTests(unittest.TestCase):
         for pwd_length in range(1,21):  # 1-20 inclusive
             password = 'a' * pwd_length  # 'a', 'aa', ...
             self.assertTrue(enc_field._get_padding(password) >= 2)
+
+    def test_none_value(self):
+        """
+        A value of None should be passed through without encryption.
+        """
+        obj = EncObject(password=None)
+        obj.save()
+        obj = EncObject.objects.get(id=obj.id)
+        self.assertEqual(obj.password, None)
+        encrypted_text = self._get_encrypted_password(obj.id)
+        self.assertEqual(encrypted_text, None)
 
     ### Utility methods for tests ###
 
