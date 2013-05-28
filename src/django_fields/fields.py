@@ -32,6 +32,8 @@ class BaseEncryptedField(models.Field):
     def __init__(self, *args, **kwargs):
         self.cipher_type = kwargs.pop('cipher', 'AES')
         self.block_type = kwargs.pop('block_type', None)
+        if self.block_type == None:
+            warnings.warn("Default usage of pycrypto's AES block type defaults has been deprecated deprecated and will be removed in 0.3.0 (default will become MODE_CBC). Please specify a secure block_type, such as CBC.", DeprecationWarning)
         try:
             imp = __import__('Crypto.Cipher', globals(), locals(), [self.cipher_type], -1)
         except:
