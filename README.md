@@ -12,6 +12,13 @@ This project uses Travis for continuous integration: [![Build Status](https://se
 ChangeLog
 ---------
 
+### 0.2.1
+
+* Added: `EncryptedUSSocialSecurityNumberField`, which handles the special-case logic of validating and encryptign US Social Security Numbers, using `django.contrib.localflavor.us.forms.USSocialSecurityNumberField`. (via [Brooks Travis](https://github.com/svetlyak40wt/django-fields/pull/24 "Pull Request 24"))
+* Fixed: Issue [#21](https://github.com/svetlyak40wt/django-fields/issues/21 "Issue #21").
+* Changed: `django_fields.fields.BaseEncryptedField` now supports specification of cipher `block_type` via keyword argument. (via [kromem](https://github.com/svetlyak40wt/django-fields/pull/26 "Pull Request 26"))
+* Added: Deprecation warning for fields that do not specify a `block_type`.
+
 ### 0.2.0
 
 * Added: Class `django_fields.models.ModelWithPrivateFields`, which allows to use private fields, starting from two underscores.
@@ -73,3 +80,5 @@ Contributors
 * Joe Jasinski — different fixes and new fields for encripted email and US Phone.
 * Colin MacDonald — for many encripted fields added.
 * Igor Davydenko — PickleField.
+* kromem - Added support for specifying `block_type` on encrypted fields.
+* Brooks Travis - new field for encrypted US Social Security Number and other fixes.
