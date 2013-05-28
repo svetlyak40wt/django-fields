@@ -80,3 +80,5 @@ Contributors
 * Joe Jasinski — different fixes and new fields for encripted email and US Phone.
 * Colin MacDonald — for many encripted fields added.
 * Igor Davydenko — PickleField.
+* kromem - Added support for specifying `block_type` on encrypted fields.
+* Brooks Travis - new field for encrypted US Social Security Number and other fixes.
