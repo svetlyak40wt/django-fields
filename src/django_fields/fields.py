@@ -69,7 +69,6 @@ class BaseEncryptedField(models.Field):
         mod = (len(value) + 2) % self.cipher.block_size
         return self.cipher.block_size - mod + 2
 
-
     def to_python(self, value):
         if self._is_encrypted(value):
             if self.block_type:
@@ -218,15 +217,17 @@ class BaseEncryptedNumberField(BaseEncryptedField):
 
     def to_python(self, value):
         # value is either an int or a string of an integer
-        if isinstance(value, self.number_type):
+        if isinstance(value, self.number_type) or value is None:
             number = value
         else:
             number_text = super(BaseEncryptedNumberField, self).to_python(value)
             number = self.number_type(number_text)
         return number
 
-    # def get_prep_value(self, value):
     def get_db_prep_value(self, value, connection=None, prepared=False):
+        if value is None:
+            return None
+
         number_text = self.format_string % value
         return super(BaseEncryptedNumberField, self).get_db_prep_value(
             number_text,
