@@ -14,7 +14,7 @@ ChangeLog
 
 ### 0.2.1
 
-* Added: `EncryptedUSSocialSecurityNumberField`, which handles the special-case logic of validating and encryptign US Social Security Numbers, using `django.contrib.localflavor.us.forms.USSocialSecurityNumberField`. (via [Brooks Travis](https://github.com/svetlyak40wt/django-fields/pull/24 "Pull Request 24"))
+* Added: `EncryptedUSSocialSecurityNumberField`, which handles the special-case logic of validating and encrypting US Social Security Numbers, using `django.contrib.localflavor.us.forms.USSocialSecurityNumberField`. (via [Brooks Travis](https://github.com/svetlyak40wt/django-fields/pull/24 "Pull Request 24"))
 * Fixed: Issue [#21](https://github.com/svetlyak40wt/django-fields/issues/21 "Issue #21").
 * Changed: `django_fields.fields.BaseEncryptedField` now supports specification of cipher `block_type` via keyword argument. (via [kromem](https://github.com/svetlyak40wt/django-fields/pull/26 "Pull Request 26"))
 * Added: Deprecation warning for fields that do not specify a `block_type`.
