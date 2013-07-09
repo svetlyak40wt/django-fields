@@ -220,7 +220,7 @@ class BaseEncryptedNumberField(BaseEncryptedField):
 
     def to_python(self, value):
         # value is either an int or a string of an integer
-        if isinstance(value, self.number_type):
+        if isinstance(value, self.number_type) or value == '':
             number = value
         else:
             number_text = super(BaseEncryptedNumberField, self).to_python(value)
@@ -301,10 +301,10 @@ class EncryptedUSPhoneNumberField(BaseEncryptedField):
 
 class EncryptedUSSocialSecurityNumberField(BaseEncryptedField):
     __metaclass__ = models.SubfieldBase
-    
+
     def get_internal_type(self):
         return "CharField"
-    
+
     def formfield(self, **kwargs):
         from django.contrib.localflavor.us.forms import USSocialSecurityNumberField
         defaults = {'form_class': USSocialSecurityNumberField}
