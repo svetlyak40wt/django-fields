@@ -336,7 +336,12 @@ try:
             ],
             [],
             {
+<<<<<<< HEAD
                 'cipher':('cipher_type', {}),
+=======
+                'cipher': ('cipher_type', {}),
+                'block_type': ('block_type', {}),
+>>>>>>> f5ec63e... add block_type to the south introspection rules
             },
         ),
     ], ["^django_fields\.fields\..+?Field"])
