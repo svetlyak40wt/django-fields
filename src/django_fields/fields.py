@@ -348,6 +348,7 @@ try:
             [],
             {
                 'cipher': ('cipher_type', {}),
+                'block_type': ('block_type', {}),
             },
         ),
     ], ["^django_fields\.fields\..+?Field"])
