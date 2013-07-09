@@ -51,7 +51,7 @@ class PickleObject(models.Model):
     data = PickleField()
 
 
-class EmailObject(models.Model): 
+class EmailObject(models.Model):
     max_email = 255
     email = EncryptedEmailField()
 
@@ -87,7 +87,7 @@ class EncryptTests(unittest.TestCase):
         encrypted_password = self._get_encrypted_password(obj.id)
         self.assertNotEqual(encrypted_password, password)
         self.assertTrue(encrypted_password.startswith('$AES$'))
-        
+
     def test_encryption_w_cipher(self):
         """
         Test that the database values are actually encrypted when using
@@ -103,6 +103,25 @@ class EncryptTests(unittest.TestCase):
         encrypted_password = self._get_encrypted_password_cipher(obj.id)
         self.assertNotEqual(encrypted_password, password)
         self.assertTrue(encrypted_password.startswith('$AES$MODE_CBC$'))
+
+    def test_multiple_encryption_w_cipher(self):
+        """
+        Test that the database values are actually encrypted when using
+        non-default cipher types.
+        """
+        password = 'this is a password!!'  # 20 chars
+        obj = CipherEncObject(password = password)
+        obj.save()
+        # The value from the retrieved object should be the same...
+        obj = CipherEncObject.objects.get(id=obj.id)
+        self.assertEqual(password, obj.password)
+
+        password = 'another password!!'  # 20 chars
+        obj = CipherEncObject(password = password)
+        obj.save()
+        # The value from the retrieved object should be the same...
+        obj = CipherEncObject.objects.get(id=obj.id)
+        self.assertEqual(password, obj.password)
 
     def test_max_field_length(self):
         password = 'a' * EncObject.max_password
@@ -122,7 +141,7 @@ class EncryptTests(unittest.TestCase):
         obj.save()
         obj = EncObject.objects.get(id=obj.id)
         self.assertEqual(password, obj.password)
-    
+
     def test_consistent_encryption(self):
         """
         The same password should not encrypt the same way twice.
@@ -134,7 +153,7 @@ class EncryptTests(unittest.TestCase):
         for pwd_length in range(1,21):  # 1-20 inclusive
             enc_pwd_1, enc_pwd_2 = self._get_two_passwords(pwd_length)
             self.assertNotEqual(enc_pwd_1, enc_pwd_2)
-    
+
     def test_minimum_padding(self):
         """
         There should always be at least two chars of padding.
@@ -163,7 +182,7 @@ class EncryptTests(unittest.TestCase):
         passwords = map(lambda x: x[0], cursor.fetchall())
         self.assertEqual(len(passwords), 1)  # only one
         return passwords[0]
-    
+
     def _get_encrypted_password_cipher(self, id):
         cursor = connection.cursor()
         cursor.execute("select password from django_fields_cipherencobject where id = %s", [id,])
@@ -352,7 +371,7 @@ class EncryptEmailTests(unittest.TestCase):
         obj.save()
         obj = EmailObject.objects.get(id=obj.id)
         self.assertEqual(email, obj.email)
-    
+
     def test_consistent_encryption(self):
         """
         The same password should not encrypt the same way twice.
@@ -364,7 +383,7 @@ class EncryptEmailTests(unittest.TestCase):
         for email_length in range(1,21):  # 1-20 inclusive
             enc_email_1, enc_email_2 = self._get_two_emails(email_length)
             self.assertNotEqual(enc_email_1, enc_email_2)
-    
+
     def test_minimum_padding(self):
         """
         There should always be at least two chars of padding.

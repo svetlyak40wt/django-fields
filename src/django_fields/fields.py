@@ -91,9 +91,7 @@ class BaseEncryptedField(models.Field):
             else:
                 decrypt_value = binascii.a2b_hex(value[len(self.prefix):])
             return force_unicode(
-                self.cipher.decrypt(
-                    decrypt_value
-                ).split('\0')[0]
+                self.cipher.decrypt(decrypt_value).split('\0')[0]
             )
         return value
 
@@ -111,6 +109,10 @@ class BaseEncryptedField(models.Field):
                     for index in range(padding-1)
                 ])
             if self.block_type:
+                self.cipher = self.cipher_object.new(
+                    settings.SECRET_KEY[:32],
+                    getattr(self.cipher_object, self.block_type),
+                    self.iv)
                 value = self.prefix + binascii.b2a_hex(self.iv + self.cipher.encrypt(value))
             else:
                 value = self.prefix + binascii.b2a_hex(self.cipher.encrypt(value))
