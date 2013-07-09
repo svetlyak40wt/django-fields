@@ -301,10 +301,10 @@ class EncryptedUSPhoneNumberField(BaseEncryptedField):
 
 class EncryptedUSSocialSecurityNumberField(BaseEncryptedField):
     __metaclass__ = models.SubfieldBase
-    
+
     def get_internal_type(self):
         return "CharField"
-    
+
     def formfield(self, **kwargs):
         from django.contrib.localflavor.us.forms import USSocialSecurityNumberField
         defaults = {'form_class': USSocialSecurityNumberField}
@@ -336,7 +336,8 @@ try:
             ],
             [],
             {
-                'cipher':('cipher_type', {}),
+                'cipher': ('cipher_type', {}),
+                'block_type': ('block_type', {}),
             },
         ),
     ], ["^django_fields\.fields\..+?Field"])
