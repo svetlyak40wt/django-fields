@@ -14,8 +14,11 @@ from Crypto import Random
 from Crypto.Random import random
 
 if hasattr(settings, 'USE_CPICKLE'):
-    warnings.warn("The USE_CPICKLE options is now obsolete. cPickle will always "
-    "be used unless it cannot be found or DEBUG=True",DeprecationWarning)
+    warnings.warn(
+        "The USE_CPICKLE options is now obsolete. cPickle will always "
+        "be used unless it cannot be found or DEBUG=True",
+        DeprecationWarning,
+    )
 
 if settings.DEBUG:
     import pickle
@@ -32,8 +35,13 @@ class BaseEncryptedField(models.Field):
     def __init__(self, *args, **kwargs):
         self.cipher_type = kwargs.pop('cipher', 'AES')
         self.block_type = kwargs.pop('block_type', None)
-        if self.block_type == None:
-            warnings.warn("Default usage of pycrypto's AES block type defaults has been deprecated and will be removed in 0.3.0 (default will become MODE_CBC). Please specify a secure block_type, such as CBC.", DeprecationWarning)
+        if self.block_type is None:
+            warnings.warn(
+                "Default usage of pycrypto's AES block type defaults has been "
+                "deprecated and will be removed in 0.3.0 (default will become "
+                "MODE_CBC). Please specify a secure block_type, such as CBC.",
+                DeprecationWarning,
+            )
         try:
             imp = __import__('Crypto.Cipher', globals(), locals(), [self.cipher_type], -1)
         except:
@@ -71,7 +79,6 @@ class BaseEncryptedField(models.Field):
         mod = (len(value) + 2) % self.cipher.block_size
         return self.cipher.block_size - mod + 2
 
-
     def to_python(self, value):
         if self._is_encrypted(value):
             if self.block_type:
@@ -84,9 +91,7 @@ class BaseEncryptedField(models.Field):
             else:
                 decrypt_value = binascii.a2b_hex(value[len(self.prefix):])
             return force_unicode(
-                self.cipher.decrypt(
-                    decrypt_value
-                ).split('\0')[0]
+                self.cipher.decrypt(decrypt_value).split('\0')[0]
             )
         return value
 
@@ -97,11 +102,17 @@ class BaseEncryptedField(models.Field):
         value = smart_str(value)
 
         if not self._is_encrypted(value):
-            padding  = self._get_padding(value)
+            padding = self._get_padding(value)
             if padding > 0:
-                value += "\0" + ''.join([random.choice(string.printable)
-                    for index in range(padding-1)])
+                value += "\0" + ''.join([
+                    random.choice(string.printable)
+                    for index in range(padding-1)
+                ])
             if self.block_type:
+                self.cipher = self.cipher_object.new(
+                    settings.SECRET_KEY[:32],
+                    getattr(self.cipher_object, self.block_type),
+                    self.iv)
                 value = self.prefix + binascii.b2a_hex(self.iv + self.cipher.encrypt(value))
             else:
                 value = self.prefix + binascii.b2a_hex(self.cipher.encrypt(value))
@@ -134,8 +145,10 @@ class EncryptedCharField(BaseEncryptedField):
     def get_db_prep_value(self, value, connection=None, prepared=False):
         if value is not None and not self._is_encrypted(value):
             if len(value) > self.unencrypted_length:
-                raise ValueError("Field value longer than max allowed: " +
-                    str(len(value)) + " > " + str(self.unencrypted_length))
+                raise ValueError(
+                    "Field value longer than max allowed: " +
+                    str(len(value)) + " > " + str(self.unencrypted_length)
+                )
         return super(EncryptedCharField, self).get_db_prep_value(
             value,
             connection=connection,
@@ -157,7 +170,7 @@ class BaseEncryptedDateField(BaseEncryptedField):
         return 'CharField'
 
     def formfield(self, **kwargs):
-        defaults = {'widget': self.form_widget,'form_class':self.form_field}
+        defaults = {'widget': self.form_widget, 'form_class': self.form_field}
         defaults.update(kwargs)
         return super(BaseEncryptedDateField, self).formfield(**defaults)
 
@@ -220,7 +233,7 @@ class BaseEncryptedNumberField(BaseEncryptedField):
 
     def to_python(self, value):
         # value is either an int or a string of an integer
-        if isinstance(value, self.number_type):
+        if isinstance(value, self.number_type) or value == '':
             number = value
         else:
             number_text = super(BaseEncryptedNumberField, self).to_python(value)
@@ -301,10 +314,10 @@ class EncryptedUSPhoneNumberField(BaseEncryptedField):
 
 class EncryptedUSSocialSecurityNumberField(BaseEncryptedField):
     __metaclass__ = models.SubfieldBase
-    
+
     def get_internal_type(self):
         return "CharField"
-    
+
     def formfield(self, **kwargs):
         from django.contrib.localflavor.us.forms import USSocialSecurityNumberField
         defaults = {'form_class': USSocialSecurityNumberField}
@@ -336,7 +349,8 @@ try:
             ],
             [],
             {
-                'cipher':('cipher_type', {}),
+                'cipher': ('cipher_type', {}),
+                'block_type': ('block_type', {}),
             },
         ),
     ], ["^django_fields\.fields\..+?Field"])
