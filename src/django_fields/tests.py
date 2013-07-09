@@ -106,20 +106,17 @@ class EncryptTests(unittest.TestCase):
 
     def test_multiple_encryption_w_cipher(self):
         """
-        Test that the database values are actually encrypted when using
-        non-default cipher types.
+        Test that a single field can be reused without error.
         """
-        password = 'this is a password!!'  # 20 chars
-        obj = CipherEncObject(password = password)
+        password = 'this is a password!!'
+        obj = CipherEncObject(password=password)
         obj.save()
-        # The value from the retrieved object should be the same...
         obj = CipherEncObject.objects.get(id=obj.id)
         self.assertEqual(password, obj.password)
 
-        password = 'another password!!'  # 20 chars
-        obj = CipherEncObject(password = password)
+        password = 'another password!!'
+        obj = CipherEncObject(password=password)
         obj.save()
-        # The value from the retrieved object should be the same...
         obj = CipherEncObject.objects.get(id=obj.id)
         self.assertEqual(password, obj.password)
 
