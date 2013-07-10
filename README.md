@@ -11,6 +11,11 @@ This project uses Travis for continuous integration: [![Build Status](https://se
 
 ChangeLog
 ---------
+### 0.2.2
+
+* Fixed: Django admin needs to be able to create blank instances of the fields in order to create a new model. This broke with `BaseEncryptedNumberField`. (via [defrex](https://github.com/svetlyak40wt/django-fields/pull/32 "Issue #32"))
+* Fixed: `block_type` wasn't added to the south rules. (via [defrex](https://github.com/svetlyak40wt/django-fields/pull/33 "Issue #33"))
+* Fixed: Newer code paths with `block_type` specified couldn't reuse the `cipher` object on the field class. `to_python` was already redefining it before decrypting the value, but `get_db_prep_value` wasn't before encrypting. The first time you used a model it would be fine, but the second would fail. Thus the tests were passing but the classes were functionally useless in an application. (via [defrex](https://github.com/svetlyak40wt/django-fields/pull/34 "Issue #34"))
 
 ### 0.2.1
 
