@@ -308,9 +308,10 @@ class EncryptedUSPhoneNumberField(BaseEncryptedField):
 
     def formfield(self, **kwargs):
         try:
+            from localflavor.us.forms import USPhoneNumberField            
+        except ImportError:
             from django.contrib.localflavor.us.forms import USPhoneNumberField
-        except:
-            from localflavor.us.forms import USPhoneNumberField
+
         defaults = {'form_class': USPhoneNumberField}
         defaults.update(kwargs)
         return super(EncryptedUSPhoneNumberField, self).formfield(**defaults)
@@ -324,10 +325,10 @@ class EncryptedUSSocialSecurityNumberField(BaseEncryptedField):
 
     def formfield(self, **kwargs):
         try:
-            from django.contrib.localflavor.us.forms import USSocialSecurityNumberField
-        except:
             from localflavor.us.forms import USSocialSecurityNumberField
-            
+        except ImportError:
+            from django.contrib.localflavor.us.forms import USSocialSecurityNumberField            
+
         defaults = {'form_class': USSocialSecurityNumberField}
         defaults.update(kwargs)
         return super(EncryptedUSSocialSecurityNumberField, self).formfield(**defaults)
