@@ -87,3 +87,7 @@ Contributors
 * Igor Davydenko — PickleField.
 * kromem - Added support for specifying `block_type` on encrypted fields.
 * Brooks Travis - new field for encrypted US Social Security Number and other fixes.
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/svetlyak40wt/django-fields/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
