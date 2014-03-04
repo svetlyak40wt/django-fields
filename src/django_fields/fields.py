@@ -35,6 +35,9 @@ class BaseEncryptedField(models.Field):
     def __init__(self, *args, **kwargs):
         self.cipher_type = kwargs.pop('cipher', 'AES')
         self.block_type = kwargs.pop('block_type', None)
+        self.secret_key = kwargs.pop('secret_key', settings.SECRET_KEY)
+        self.secret_key = self.secret_key[:32]
+
         if self.block_type is None:
             warnings.warn(
                 "Default usage of pycrypto's AES block type defaults has been "
@@ -51,11 +54,11 @@ class BaseEncryptedField(models.Field):
             self.prefix = '$%s$%s$' % (self.cipher_type, self.block_type)
             self.iv = Random.new().read(self.cipher_object.block_size)
             self.cipher = self.cipher_object.new(
-                settings.SECRET_KEY[:32],
+                self.secret_key,
                 getattr(self.cipher_object, self.block_type),
                 self.iv)
         else:
-            self.cipher = self.cipher_object.new(settings.SECRET_KEY[:32])
+            self.cipher = self.cipher_object.new(self.secret_key)
             self.prefix = '$%s$' % self.cipher_type
 
         max_length = kwargs.get('max_length', 40)
@@ -84,7 +87,7 @@ class BaseEncryptedField(models.Field):
             if self.block_type:
                 self.iv = binascii.a2b_hex(value[len(self.prefix):])[:len(self.iv)]
                 self.cipher = self.cipher_object.new(
-                    settings.SECRET_KEY[:32],
+                    self.secret_key,
                     getattr(self.cipher_object, self.block_type),
                     self.iv)
                 decrypt_value = binascii.a2b_hex(value[len(self.prefix):])[len(self.iv):]
@@ -110,7 +113,7 @@ class BaseEncryptedField(models.Field):
                 ])
             if self.block_type:
                 self.cipher = self.cipher_object.new(
-                    settings.SECRET_KEY[:32],
+                    self.secret_key,
                     getattr(self.cipher_object, self.block_type),
                     self.iv)
                 value = self.prefix + binascii.b2a_hex(self.iv + self.cipher.encrypt(value))
