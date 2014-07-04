@@ -1,7 +1,10 @@
 from setuptools import setup, find_packages
+
+version = '0.2.3'
+
 setup(
     name = 'django-fields',
-    version = '0.2.2',
+    version = version,
     description = 'Django-fields is an application which includes different kinds of models fields.',
     keywords = 'django apps tools collection',
     license = 'New BSD License',
