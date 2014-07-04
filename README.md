@@ -11,6 +11,11 @@ This project uses Travis for continuous integration: [![Build Status](https://se
 
 ChangeLog
 ---------
+### 0.2.3
+
+* Added: Ability to specify `secret_key` as an argument to the field constructor (via [markkennedy](https://github.com/svetlyak40wt/django-fields/pull/40 "Issue #40")).
+* Added: `EncryptedUSPhoneNumberField` and `EncryptedUSSocialSecurityNumberField` now try to import from the standalone django-localflavor before falling back to the version included in Django (this is necessary to support Django 1.6 and newer) (via [mjacksonw](https://github.com/svetlyak40wt/django-fields/pull/36 "Issue #33")).
+
 ### 0.2.2
 
 * Fixed: Django admin needs to be able to create blank instances of the fields in order to create a new model. This broke with `BaseEncryptedNumberField`. (via [defrex](https://github.com/svetlyak40wt/django-fields/pull/32 "Issue #32"))
