@@ -11,6 +11,9 @@ This project uses Travis for continuous integration: [![Build Status](https://se
 
 ChangeLog
 ---------
+### 0.2.4
+* Added: Support for Django migrations (>=1.7) thanks to Field.deconstruct()
+
 ### 0.2.3
 
 * Added: Ability to specify `secret_key` as an argument to the field constructor (via [markkennedy](https://github.com/svetlyak40wt/django-fields/pull/40 "Issue #40")).
