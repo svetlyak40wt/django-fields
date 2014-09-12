@@ -61,7 +61,7 @@ class BaseEncryptedField(models.Field):
             self.cipher = self.cipher_object.new(self.secret_key)
             self.prefix = '$%s$' % self.cipher_type
 
-        max_length = kwargs.get('max_length', 40)
+        self.original_max_length = max_length = kwargs.get('max_length', 40)
         self.unencrypted_length = max_length
         # always add at least 2 to the max_length:
         #     one for the null byte, one for padding
@@ -71,7 +71,7 @@ class BaseEncryptedField(models.Field):
             max_length += self.cipher.block_size - mod
         kwargs['max_length'] = max_length * 2 + len(self.prefix)
 
-        models.Field.__init__(self, *args, **kwargs)
+        super(BaseEncryptedField, self).__init__(*args, **kwargs)
 
     def _is_encrypted(self, value):
         return isinstance(value, basestring) and value.startswith(self.prefix)
@@ -120,6 +120,17 @@ class BaseEncryptedField(models.Field):
             else:
                 value = self.prefix + binascii.b2a_hex(self.cipher.encrypt(value))
         return value
+
+    def deconstruct(self):
+        original = super(BaseEncryptedField, self).deconstruct()
+        kwargs = original[-1]
+        if self.cipher_type != 'AES':
+            kwargs['cipher'] = self.cipher_type
+        if self.block_type is not None:
+            kwargs['block_type'] = self.block_type
+        if self.original_max_length != 40:
+            kwargs['max_length'] = self.original_max_length
+        return original[:-1] + (kwargs,)
 
 
 class EncryptedTextField(BaseEncryptedField):
