@@ -69,6 +69,9 @@ class CipherEncObject(models.Model):
         max_length=max_password,
         block_type = 'MODE_CBC')
 
+class CipherEncDate(models.Model):
+    important_date = EncryptedDateField(block_type='MODE_CBC')
+
 class EncryptTests(unittest.TestCase):
 
     def setUp(self):
@@ -234,6 +237,18 @@ class DateEncryptTests(unittest.TestCase):
         self.assertTrue(important_datetime.startswith('$AES$'))
         self.assertNotEqual(important_datetime, now)
 
+    def test_date_encryption_w_cipher(self):
+        today = datetime.date.today()
+        obj = CipherEncDate(important_date=today)
+        obj.save()
+        # The date from the retrieved object should be the same...
+        obj = CipherEncDate.objects.get(id=obj.id)
+        self.assertEqual(today, obj.important_date)
+        # ...but the value in the database should not
+        important_date = self._get_encrypted_date_cipher(obj.id)
+        self.assertTrue(important_date.startswith('$AES$MODE_CBC$'))
+        self.assertNotEqual(important_date, today)
+
     ### Utility methods for tests ###
 
     def _get_encrypted_date(self, id):
@@ -249,6 +264,13 @@ class DateEncryptTests(unittest.TestCase):
         important_datetimes = map(lambda x: x[0], cursor.fetchall())
         self.assertEqual(len(important_datetimes), 1)  # only one
         return important_datetimes[0]
+
+    def _get_encrypted_date_cipher(self, id):
+        cursor = connection.cursor()
+        cursor.execute("select important_date from django_fields_cipherencdate where id = %s", [id,])
+        important_dates = map(lambda x: x[0], cursor.fetchall())
+        self.assertEqual(len(important_dates), 1)  # only one
+        return important_dates[0]
 
 
 class NumberEncryptTests(unittest.TestCase):
