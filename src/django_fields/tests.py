@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import datetime
+import re
 import string
 import sys
 import unittest
@@ -451,3 +452,41 @@ class PrivateFieldsTests(unittest.TestCase):
         self.assert_('_TestModelWithPrivateFields__' not in sql, '_TestModelWithPrivateFields__ is in the "' + sql + '"')
 
 
+class DatabaseSchemaTests(unittest.TestCase):
+    def test_cipher_storage_length_versus_schema_length(self):
+        password = 'this is a password!!'  # 20 chars
+        obj = CipherEncObject(password=password)
+        obj.save()
+        # Get the raw (encrypted) value from the database
+        raw_value = self._get_raw_password_value(obj.id)
+        column_width = self._get_password_field_column_width()
+        # The raw value should fit within the column width
+        self.assertLessEqual(len(raw_value), column_width)
+
+    ### Utility methods for tests ###
+
+    def _get_raw_password_value(self, id):
+        cursor = connection.cursor()
+        cursor.execute("select password from django_fields_cipherencobject where id = %s", [id, ])
+        passwords = map(lambda x: x[0], cursor.fetchall())
+        self.assertEqual(len(passwords), 1)  # only one
+        return passwords[0]
+
+    def _get_password_field_column_width(self):
+        # This only works in SQLite; if you change the
+        # type of database used for testing, the type
+        # returned from get_table_description might be
+        # different!
+        cursor = connection.cursor()
+        table_description = connection.introspection.get_table_description(cursor, 'django_fields_cipherencobject')
+        # The first field in the tuple is the column name
+        password_field = [field for field in table_description if field[0] == 'password']
+        self.assertEqual(len(password_field), 1)
+        password_field = password_field[0]
+        # The second field contains the type;
+        # this is something like u'varchar(78)'
+        raw_type = password_field[1]
+        matches = re.match('varchar\((\d+)\)', raw_type.lower())
+        self.assertNotEqual(matches, None)
+        column_width = int(matches.groups()[0])
+        return column_width
