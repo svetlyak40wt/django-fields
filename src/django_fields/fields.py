@@ -69,6 +69,8 @@ class BaseEncryptedField(models.Field):
         mod = max_length % self.cipher.block_size
         if mod > 0:
             max_length += self.cipher.block_size - mod
+        if self.block_type:
+            max_length += len(self.iv)
         kwargs['max_length'] = max_length * 2 + len(self.prefix)
 
         super(BaseEncryptedField, self).__init__(*args, **kwargs)

@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import datetime
+import re
 import string
 import sys
 import unittest
@@ -67,6 +68,9 @@ class CipherEncObject(models.Model):
     password = EncryptedCharField(
         max_length=max_password,
         block_type = 'MODE_CBC')
+
+class CipherEncDate(models.Model):
+    important_date = EncryptedDateField(block_type='MODE_CBC')
 
 class EncryptTests(unittest.TestCase):
 
@@ -233,6 +237,18 @@ class DateEncryptTests(unittest.TestCase):
         self.assertTrue(important_datetime.startswith('$AES$'))
         self.assertNotEqual(important_datetime, now)
 
+    def test_date_encryption_w_cipher(self):
+        today = datetime.date.today()
+        obj = CipherEncDate(important_date=today)
+        obj.save()
+        # The date from the retrieved object should be the same...
+        obj = CipherEncDate.objects.get(id=obj.id)
+        self.assertEqual(today, obj.important_date)
+        # ...but the value in the database should not
+        important_date = self._get_encrypted_date_cipher(obj.id)
+        self.assertTrue(important_date.startswith('$AES$MODE_CBC$'))
+        self.assertNotEqual(important_date, today)
+
     ### Utility methods for tests ###
 
     def _get_encrypted_date(self, id):
@@ -248,6 +264,13 @@ class DateEncryptTests(unittest.TestCase):
         important_datetimes = map(lambda x: x[0], cursor.fetchall())
         self.assertEqual(len(important_datetimes), 1)  # only one
         return important_datetimes[0]
+
+    def _get_encrypted_date_cipher(self, id):
+        cursor = connection.cursor()
+        cursor.execute("select important_date from django_fields_cipherencdate where id = %s", [id,])
+        important_dates = map(lambda x: x[0], cursor.fetchall())
+        self.assertEqual(len(important_dates), 1)  # only one
+        return important_dates[0]
 
 
 class NumberEncryptTests(unittest.TestCase):
@@ -451,3 +474,41 @@ class PrivateFieldsTests(unittest.TestCase):
         self.assert_('_TestModelWithPrivateFields__' not in sql, '_TestModelWithPrivateFields__ is in the "' + sql + '"')
 
 
+class DatabaseSchemaTests(unittest.TestCase):
+    def test_cipher_storage_length_versus_schema_length(self):
+        password = 'this is a password!!'  # 20 chars
+        obj = CipherEncObject(password=password)
+        obj.save()
+        # Get the raw (encrypted) value from the database
+        raw_value = self._get_raw_password_value(obj.id)
+        column_width = self._get_password_field_column_width()
+        # The raw value should fit within the column width
+        self.assertLessEqual(len(raw_value), column_width)
+
+    ### Utility methods for tests ###
+
+    def _get_raw_password_value(self, id):
+        cursor = connection.cursor()
+        cursor.execute("select password from django_fields_cipherencobject where id = %s", [id, ])
+        passwords = map(lambda x: x[0], cursor.fetchall())
+        self.assertEqual(len(passwords), 1)  # only one
+        return passwords[0]
+
+    def _get_password_field_column_width(self):
+        # This only works in SQLite; if you change the
+        # type of database used for testing, the type
+        # returned from get_table_description might be
+        # different!
+        cursor = connection.cursor()
+        table_description = connection.introspection.get_table_description(cursor, 'django_fields_cipherencobject')
+        # The first field in the tuple is the column name
+        password_field = [field for field in table_description if field[0] == 'password']
+        self.assertEqual(len(password_field), 1)
+        password_field = password_field[0]
+        # The second field contains the type;
+        # this is something like u'varchar(78)'
+        raw_type = password_field[1]
+        matches = re.match('varchar\((\d+)\)', raw_type.lower())
+        self.assertNotEqual(matches, None)
+        column_width = int(matches.groups()[0])
+        return column_width
