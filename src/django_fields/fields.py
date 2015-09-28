@@ -28,6 +28,12 @@ else:
     except:
         import pickle
 
+if sys.version_info[0] == 3:
+    PYTHON3 = True
+else:
+    PYTHON3 = False
+
+
 class BaseEncryptedField(models.Field):
     '''This code is based on the djangosnippet #1095
        You can find the original at http://www.djangosnippets.org/snippets/1095/'''
@@ -268,7 +274,11 @@ class BaseEncryptedNumberField(BaseEncryptedField):
 
 class EncryptedIntField(BaseEncryptedNumberField):
     __metaclass__ = models.SubfieldBase
-    max_raw_length = len(str(-sys.maxint - 1))
+
+    if PYTHON3 is True:
+        max_raw_length = len(str(-sys.maxsize - 1))
+    else:
+        max_raw_length = len(str(-sys.maxint - 1))
     number_type = int
     format_string = "%d"
 
@@ -276,7 +286,10 @@ class EncryptedIntField(BaseEncryptedNumberField):
 class EncryptedLongField(BaseEncryptedNumberField):
     __metaclass__ = models.SubfieldBase
     max_raw_length = None  # no limit
-    number_type = long
+    if PYTHON3 is True:
+        number_type = int
+    else:
+        number_type = long
     format_string = "%d"
 
     def get_internal_type(self):
@@ -324,7 +337,7 @@ class EncryptedUSPhoneNumberField(BaseEncryptedField):
 
     def formfield(self, **kwargs):
         try:
-            from localflavor.us.forms import USPhoneNumberField            
+            from localflavor.us.forms import USPhoneNumberField
         except ImportError:
             from django.contrib.localflavor.us.forms import USPhoneNumberField
 
@@ -343,7 +356,7 @@ class EncryptedUSSocialSecurityNumberField(BaseEncryptedField):
         try:
             from localflavor.us.forms import USSocialSecurityNumberField
         except ImportError:
-            from django.contrib.localflavor.us.forms import USSocialSecurityNumberField            
+            from django.contrib.localflavor.us.forms import USSocialSecurityNumberField
 
         defaults = {'form_class': USSocialSecurityNumberField}
         defaults.update(kwargs)
