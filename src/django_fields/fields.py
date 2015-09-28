@@ -82,7 +82,12 @@ class BaseEncryptedField(models.Field):
         super(BaseEncryptedField, self).__init__(*args, **kwargs)
 
     def _is_encrypted(self, value):
-        return isinstance(value, basestring) and value.startswith(self.prefix)
+        if PYTHON3 is True:
+            return isinstance(value, str) and value.startswith(
+                self.prefix)
+        else:
+            return isinstance(value, basestring) and value.startswith(
+                self.prefix)
 
     def _get_padding(self, value):
         # We always want at least 2 chars of padding (including zero byte),
@@ -126,7 +131,12 @@ class BaseEncryptedField(models.Field):
                     self.iv)
                 value = self.prefix + binascii.b2a_hex(self.iv + self.cipher.encrypt(value))
             else:
-                value = self.prefix + binascii.b2a_hex(self.cipher.encrypt(value))
+                if PYTHON3 is True:
+                    value = self.prefix + binascii.b2a_hex(
+                        self.cipher.encrypt(value)).decode('utf-8')
+                else:
+                    value = self.prefix + binascii.b2a_hex(
+                        self.cipher.encrypt(value))
         return value
 
     def deconstruct(self):
