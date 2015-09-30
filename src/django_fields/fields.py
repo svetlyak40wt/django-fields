@@ -83,8 +83,8 @@ class BaseEncryptedField(models.Field):
 
     def _is_encrypted(self, value):
         if PYTHON3 is True:
-            return isinstance(value, str) and value.startswith(
-                self.prefix)
+            is_enc = isinstance(value, str) and value.startswith(self.prefix)
+            return is_enc
         else:
             return isinstance(value, basestring) and value.startswith(
                 self.prefix)
@@ -95,7 +95,7 @@ class BaseEncryptedField(models.Field):
         mod = (len(value) + 2) % self.cipher.block_size
         return self.cipher.block_size - mod + 2
 
-    def to_python(self, value):
+    def from_db_value(self, value, expression, connection, context):
         if self._is_encrypted(value):
             if self.block_type:
                 self.iv = binascii.a2b_hex(value[len(self.prefix):])[:len(self.iv)]
@@ -107,7 +107,7 @@ class BaseEncryptedField(models.Field):
             else:
                 decrypt_value = binascii.a2b_hex(value[len(self.prefix):])
             return force_unicode(
-                self.cipher.decrypt(decrypt_value).split('\0')[0]
+                self.cipher.decrypt(decrypt_value).split(b'\0')[0]
             )
         return value
 
