@@ -1,4 +1,5 @@
 import binascii
+import codecs
 import datetime
 import string
 import sys
@@ -137,6 +138,7 @@ class BaseEncryptedField(models.Field):
                         self.iv + self.cipher.encrypt(value))
             else:
                 if PYTHON3 is True:
+                    print('>>>', value, '-->', len(value)/16)
                     value = self.prefix + binascii.b2a_hex(
                         self.cipher.encrypt(value)).decode('utf-8')
                 else:
@@ -334,7 +336,13 @@ class PickleField(models.TextField):
     serialize = False
 
     def get_db_prep_value(self, value, connection=None, prepared=False):
-        return pickle.dumps(value)
+        if PYTHON3 is True:
+            # When PYTHON3, we convert data to base64 to prevent errors when
+            # unpickling.
+            val = codecs.encode(pickle.dumps(value), 'base64').decode()
+            return val
+        else:
+            return pickle.dumps(value)
 
     def to_python(self, value):
         return self.from_db_value(value)
@@ -351,8 +359,10 @@ class PickleField(models.TextField):
         # unicode excepts ugly ``KeyError: '\x00'``.
         try:
             if PYTHON3 is True:
-                val = value.encode('utf-8')
-                return pickle.loads(val)
+                # When PYTHON3, data are in base64 to prevent errors when
+                # unpickling.
+                val = pickle.loads(codecs.decode(value.encode(), "base64"))
+                return val
             else:
                 return pickle.loads(smart_str(value))
         # If pickle could not loads from string it's means that it's Python
