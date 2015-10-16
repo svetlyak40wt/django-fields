@@ -9,7 +9,6 @@ from django import forms
 from django.forms import fields
 from django.db import models
 from django.conf import settings
-from django.utils.encoding import smart_str, force_unicode
 from django.utils.translation import ugettext_lazy as _
 from Crypto import Random
 from Crypto.Random import random
@@ -31,8 +30,10 @@ else:
 
 if sys.version_info[0] == 3:
     PYTHON3 = True
+    from django.utils.encoding import smart_str, force_text as force_unicode
 else:
     PYTHON3 = False
+    from django.utils.encoding import smart_str, force_unicode
 
 
 class BaseEncryptedField(models.Field):
