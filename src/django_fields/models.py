@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import re
+import sys
 from django.db import models
+
+if sys.version_info[0] == 3:
+    PYTHON3 = True
+else:
+    PYTHON3 = False
 
 
 class PrivateFieldsMetaclass(models.base.ModelBase):
@@ -64,7 +70,11 @@ class ModelWithPrivateFields(models.Model):
 
         field_names = set(f.name for f in self._meta.fields)
 
-        for key, value in kwargs.iteritems():
+        if PYTHON3 is True:
+            items = kwargs.items()
+        else:
+            items = kwargs.iteritems()
+        for key, value in items:
             if prefix + key in field_names:
                 key = prefix + key
             new_kwargs[key] = value

@@ -20,6 +20,11 @@ from .fields import (
 
 from .models import ModelWithPrivateFields
 
+if sys.version_info[0] == 3:
+    PYTHON3 = True
+else:
+    PYTHON3 = False
+
 
 class EncObject(models.Model):
     max_password = 20
@@ -180,14 +185,14 @@ class EncryptTests(unittest.TestCase):
     def _get_encrypted_password(self, id):
         cursor = connection.cursor()
         cursor.execute("select password from django_fields_encobject where id = %s", [id,])
-        passwords = map(lambda x: x[0], cursor.fetchall())
+        passwords = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(passwords), 1)  # only one
         return passwords[0]
 
     def _get_encrypted_password_cipher(self, id):
         cursor = connection.cursor()
         cursor.execute("select password from django_fields_cipherencobject where id = %s", [id,])
-        passwords = map(lambda x: x[0], cursor.fetchall())
+        passwords = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(passwords), 1)  # only one
         return passwords[0]
 
@@ -254,21 +259,21 @@ class DateEncryptTests(unittest.TestCase):
     def _get_encrypted_date(self, id):
         cursor = connection.cursor()
         cursor.execute("select important_date from django_fields_encdate where id = %s", [id,])
-        important_dates = map(lambda x: x[0], cursor.fetchall())
+        important_dates = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(important_dates), 1)  # only one
         return important_dates[0]
 
     def _get_encrypted_datetime(self, id):
         cursor = connection.cursor()
         cursor.execute("select important_datetime from django_fields_encdatetime where id = %s", [id,])
-        important_datetimes = map(lambda x: x[0], cursor.fetchall())
+        important_datetimes = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(important_datetimes), 1)  # only one
         return important_datetimes[0]
 
     def _get_encrypted_date_cipher(self, id):
         cursor = connection.cursor()
         cursor.execute("select important_date from django_fields_cipherencdate where id = %s", [id,])
-        important_dates = map(lambda x: x[0], cursor.fetchall())
+        important_dates = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(important_dates), 1)  # only one
         return important_dates[0]
 
@@ -280,20 +285,37 @@ class NumberEncryptTests(unittest.TestCase):
         EncFloat.objects.all().delete()
 
     def test_int_encryption(self):
-        self._test_number_encryption(EncInt, 'int', sys.maxint)
+        if PYTHON3 is True:
+            self._test_number_encryption(EncInt, 'int', sys.maxsize)
+        else:
+            self._test_number_encryption(EncInt, 'int', sys.maxint)
 
     def test_min_int_encryption(self):
-        self._test_number_encryption(EncInt, 'int', -sys.maxint - 1)
+        if PYTHON3 is True:
+            self._test_number_encryption(EncInt, 'int', -sys.maxsize - 1)
+        else:
+            self._test_number_encryption(EncInt, 'int', -sys.maxint - 1)
 
     def test_long_encryption(self):
-        self._test_number_encryption(EncLong, 'long', long(sys.maxint) * 100L)
+        if PYTHON3 is True:
+            self._test_number_encryption(
+                EncLong, 'long', int(sys.maxsize) * 100)
+        else:
+            self._test_number_encryption(
+                EncLong, 'long', long(sys.maxint) * long(100))
 
     def test_float_encryption(self):
-        value = 123.456 + sys.maxint
+        if PYTHON3 is True:
+            value = 123.456 + sys.maxsize
+        else:
+            value = 123.456 + sys.maxint
         self._test_number_encryption(EncFloat, 'float', value)
 
     def test_one_third_float_encryption(self):
-        value = sys.maxint + (1.0 / 3.0)
+        if PYTHON3 is True:
+            value = sys.maxsize + (1.0 / 3.0)
+        else:
+            value = sys.maxint + (1.0 / 3.0)
         self._test_number_encryption(EncFloat, 'float', value)
 
     def _test_number_encryption(self, number_class, type_name, value):
@@ -311,7 +333,7 @@ class NumberEncryptTests(unittest.TestCase):
         cursor = connection.cursor()
         sql = "select important_number from django_fields_enc%s where id = %%s" % (type_name,)
         cursor.execute(sql, [id,])
-        important_numbers = map(lambda x: x[0], cursor.fetchall())
+        important_numbers = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(important_numbers), 1)  # only one
         return important_numbers[0]
 
@@ -418,7 +440,7 @@ class EncryptEmailTests(unittest.TestCase):
     def _get_encrypted_email(self, id):
         cursor = connection.cursor()
         cursor.execute("select email from django_fields_emailobject where id = %s", [id,])
-        emails = map(lambda x: x[0], cursor.fetchall())
+        emails = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(emails), 1)  # only one
         return emails[0]
 
@@ -490,7 +512,7 @@ class DatabaseSchemaTests(unittest.TestCase):
     def _get_raw_password_value(self, id):
         cursor = connection.cursor()
         cursor.execute("select password from django_fields_cipherencobject where id = %s", [id, ])
-        passwords = map(lambda x: x[0], cursor.fetchall())
+        passwords = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(passwords), 1)  # only one
         return passwords[0]
 
