@@ -117,15 +117,25 @@ class BaseEncryptedField(models.Field):
         if value is None:
             return None
 
-        value = smart_str(value)
+        if PYTHON3 is True:
+            value = bytes(value.encode('utf-8'))
+        else:
+            value = smart_str(value)
 
         if not self._is_encrypted(value):
             padding = self._get_padding(value)
             if padding > 0:
-                value += "\0" + ''.join([
-                    random.choice(string.printable)
-                    for index in range(padding-1)
-                ])
+                if PYTHON3 is True:
+                    value += bytes("\0".encode('utf-8')) + bytes(
+                        ''.encode('utf-8')).join([
+                            bytes(random.choice(
+                                string.printable).encode('utf-8'))
+                            for index in range(padding - 1)])
+                else:
+                    value += "\0" + ''.join([
+                        random.choice(string.printable)
+                        for index in range(padding - 1)
+                    ])
             if self.block_type:
                 self.cipher = self.cipher_object.new(
                     self.secret_key,
@@ -139,7 +149,6 @@ class BaseEncryptedField(models.Field):
                         self.iv + self.cipher.encrypt(value))
             else:
                 if PYTHON3 is True:
-                    print('>>>', value, '-->', len(value)/16)
                     value = self.prefix + binascii.b2a_hex(
                         self.cipher.encrypt(value)).decode('utf-8')
                 else:
@@ -160,7 +169,6 @@ class BaseEncryptedField(models.Field):
 
 
 class EncryptedTextField(BaseEncryptedField):
-    __metaclass__ = models.SubfieldBase
 
     def get_internal_type(self):
         return 'TextField'
@@ -172,7 +180,6 @@ class EncryptedTextField(BaseEncryptedField):
 
 
 class EncryptedCharField(BaseEncryptedField):
-    __metaclass__ = models.SubfieldBase
 
     def get_internal_type(self):
         return "CharField"
@@ -246,7 +253,6 @@ class BaseEncryptedDateField(BaseEncryptedField):
 
 
 class EncryptedDateField(BaseEncryptedDateField):
-    __metaclass__ = models.SubfieldBase
     form_widget = forms.DateInput
     form_field = forms.DateField
     save_format = "%Y:%m:%d"
@@ -256,7 +262,6 @@ class EncryptedDateField(BaseEncryptedDateField):
 
 class EncryptedDateTimeField(BaseEncryptedDateField):
     # FIXME:  This doesn't handle time zones, but Python doesn't really either.
-    __metaclass__ = models.SubfieldBase
     form_widget = forms.DateTimeInput
     form_field = forms.DateTimeField
     save_format = "%Y:%m:%d:%H:%M:%S:%f"
@@ -299,8 +304,6 @@ class BaseEncryptedNumberField(BaseEncryptedField):
 
 
 class EncryptedIntField(BaseEncryptedNumberField):
-    __metaclass__ = models.SubfieldBase
-
     if PYTHON3 is True:
         max_raw_length = len(str(-sys.maxsize - 1))
     else:
@@ -310,7 +313,6 @@ class EncryptedIntField(BaseEncryptedNumberField):
 
 
 class EncryptedLongField(BaseEncryptedNumberField):
-    __metaclass__ = models.SubfieldBase
     max_raw_length = None  # no limit
     if PYTHON3 is True:
         number_type = int
@@ -323,7 +325,6 @@ class EncryptedLongField(BaseEncryptedNumberField):
 
 
 class EncryptedFloatField(BaseEncryptedNumberField):
-    __metaclass__ = models.SubfieldBase
     max_raw_length = 150  # arbitrary, but should be sufficient
     number_type = float
     # If this format is too long for some architectures, change it.
@@ -331,8 +332,6 @@ class EncryptedFloatField(BaseEncryptedNumberField):
 
 
 class PickleField(models.TextField):
-    __metaclass__ = models.SubfieldBase
-
     editable = False
     serialize = False
 
@@ -375,8 +374,6 @@ class PickleField(models.TextField):
 
 
 class EncryptedUSPhoneNumberField(BaseEncryptedField):
-    __metaclass__ = models.SubfieldBase
-
     def get_internal_type(self):
         return "CharField"
 
@@ -392,8 +389,6 @@ class EncryptedUSPhoneNumberField(BaseEncryptedField):
 
 
 class EncryptedUSSocialSecurityNumberField(BaseEncryptedField):
-    __metaclass__ = models.SubfieldBase
-
     def get_internal_type(self):
         return "CharField"
 
@@ -407,8 +402,8 @@ class EncryptedUSSocialSecurityNumberField(BaseEncryptedField):
         defaults.update(kwargs)
         return super(EncryptedUSSocialSecurityNumberField, self).formfield(**defaults)
 
+
 class EncryptedEmailField(BaseEncryptedField):
-    __metaclass__ = models.SubfieldBase
     description = _("E-mail address")
 
     def get_internal_type(self):

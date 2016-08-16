@@ -7,6 +7,7 @@ import string
 import sys
 import unittest
 
+import django
 from django.db import connection
 from django.db import models
 
@@ -20,6 +21,11 @@ from .fields import (
 
 from .models import ModelWithPrivateFields
 
+if django.VERSION[1] > 9:
+    DJANGO_1_10 = True
+else:
+    DJANGO_1_10 = False
+
 if sys.version_info[0] == 3:
     PYTHON3 = True
 else:
@@ -27,55 +33,95 @@ else:
 
 
 class EncObject(models.Model):
-    max_password = 20
+    max_password = 100
     password = EncryptedCharField(max_length=max_password, null=True)
+
+    class Meta:
+        app_label = 'django_fields'
 
 
 class EncDate(models.Model):
     important_date = EncryptedDateField()
+
+    class Meta:
+        app_label = 'django_fields'
 
 
 class EncDateTime(models.Model):
     important_datetime = EncryptedDateTimeField()
     # important_datetime = EncryptedDateField()
 
+    class Meta:
+        app_label = 'django_fields'
+
 
 class EncInt(models.Model):
     important_number = EncryptedIntField()
+
+    class Meta:
+        app_label = 'django_fields'
 
 
 class EncLong(models.Model):
     important_number = EncryptedLongField()
 
+    class Meta:
+        app_label = 'django_fields'
+
 
 class EncFloat(models.Model):
     important_number = EncryptedFloatField()
+
+    class Meta:
+        app_label = 'django_fields'
 
 
 class PickleObject(models.Model):
     name = models.CharField(max_length=16)
     data = PickleField()
 
+    class Meta:
+        app_label = 'django_fields'
+
 
 class EmailObject(models.Model):
     max_email = 255
-    email = EncryptedEmailField()
+    email = EncryptedEmailField(max_length=max_email)
+
+    class Meta:
+        app_label = 'django_fields'
 
 
 class USPhoneNumberField(models.Model):
     phone = EncryptedUSPhoneNumberField()
 
+    class Meta:
+        app_label = 'django_fields'
+
+
 class USSocialSecurityNumberField(models.Model):
     ssn = EncryptedUSSocialSecurityNumberField()
+
+    class Meta:
+        app_label = 'django_fields'
+
 
 class CipherEncObject(models.Model):
     max_password = 20
     password = EncryptedCharField(
         max_length=max_password,
-        block_type = 'MODE_CBC')
+        block_type='MODE_CBC')
+
+    class Meta:
+        app_label = 'django_fields'
+
 
 class CipherEncDate(models.Model):
     important_date = EncryptedDateField(block_type='MODE_CBC')
+
+    class Meta:
+        app_label = 'django_fields'
+
 
 class EncryptTests(unittest.TestCase):
 
@@ -463,6 +509,9 @@ class TestModelWithPrivateFields(ModelWithPrivateFields):
     __state = models.CharField(max_length=255, editable=False)
     __state_changed_at = models.DateTimeField(editable=False, blank=True, null=True)
 
+    class Meta:
+        app_label = 'django_fields'
+
     def get_state(self):
         return self.__state
 
@@ -472,7 +521,6 @@ class TestModelWithPrivateFields(ModelWithPrivateFields):
 
     state = property(get_state, set_state)
     del get_state, set_state
-
 
 
 class PrivateFieldsTests(unittest.TestCase):
@@ -527,10 +575,15 @@ class DatabaseSchemaTests(unittest.TestCase):
         password_field = [field for field in table_description if field[0] == 'password']
         self.assertEqual(len(password_field), 1)
         password_field = password_field[0]
+        # if django < 1.10
         # The second field contains the type;
         # this is something like u'varchar(78)'
-        raw_type = password_field[1]
-        matches = re.match('varchar\((\d+)\)', raw_type.lower())
-        self.assertNotEqual(matches, None)
-        column_width = int(matches.groups()[0])
-        return column_width
+        if DJANGO_1_10 is False:
+            raw_type = password_field[1]
+            matches = re.match('varchar\((\d+)\)', raw_type.lower())
+            self.assertNotEqual(matches, None)
+            column_width = int(matches.groups()[0])
+            return column_width
+        else:
+            raw_type = password_field.internal_size
+            return raw_type
