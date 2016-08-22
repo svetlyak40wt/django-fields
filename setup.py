@@ -16,6 +16,7 @@ setup(
         'pycrypto',
         'nose',
         'django-nose==1.4.4',
+        'tox',
     ],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
