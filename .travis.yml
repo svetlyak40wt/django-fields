@@ -1,2 +1,2 @@
 language: python
-script: ./run-tests.sh
+# script: ./run-tests.sh
