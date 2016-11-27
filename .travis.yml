@@ -11,7 +11,7 @@ env:
   - TOX_ENV=py35-110
 # command to install dependencies
 install:
-  - pip install tox
+  - pip install tox-travis
 # command to run tests
 script:
   - tox -e $TOX_ENV
