@@ -17,3 +17,5 @@ script:
   - tox -e $TOX_ENV
 # containers
 sudo: false
+python:
+ - "3.5"
