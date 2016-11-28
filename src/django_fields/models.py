@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import re
 import sys
 
-from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 
 if sys.version_info[0] == 3:
