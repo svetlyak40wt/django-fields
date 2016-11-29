@@ -19,8 +19,6 @@ from .fields import (
     EncryptedEmailField,
 )
 
-from .models import ModelWithPrivateFields
-
 if django.VERSION[1] > 9:
     DJANGO_1_10 = True
 else:
@@ -502,46 +500,6 @@ class EncryptEmailTests(unittest.TestCase):
         enc_email_2 = self._get_encrypted_email(obj_2.id)
         return enc_email_1, enc_email_2
 
-
-class TestModelWithPrivateFields(ModelWithPrivateFields):
-    """This model is for the unittests against ModelWithPrivateFields.
-    """
-    __state = models.CharField(max_length=255, editable=False)
-    __state_changed_at = models.DateTimeField(editable=False, blank=True, null=True)
-
-    class Meta:
-        app_label = 'django_fields'
-
-    def get_state(self):
-        return self.__state
-
-    def set_state(self, value):
-        self.__state = value
-        self.__state_changed_at = datetime.datetime.now()
-
-    state = property(get_state, set_state)
-    del get_state, set_state
-
-
-class PrivateFieldsTests(unittest.TestCase):
-    def test_private_fields(self):
-        obj1 = TestModelWithPrivateFields(state='blah')
-
-        self.assert_(obj1._TestModelWithPrivateFields__state_changed_at is None)
-        obj1.save()
-
-        obj2 = TestModelWithPrivateFields.objects.create(state='minor')
-        self.assert_(obj2._TestModelWithPrivateFields__state_changed_at is None)
-
-        self.assertEqual(1, TestModelWithPrivateFields.objects.filter(state='blah').count())
-        self.assertEqual(2, TestModelWithPrivateFields.objects.all().count())
-
-        obj1.state = 'blah2' # this has a side effect:
-        self.assert_(obj1._TestModelWithPrivateFields__state_changed_at is not None)
-        obj1.save()
-
-        sql = unicode(TestModelWithPrivateFields.objects.filter(state='blah').query)
-        self.assert_('_TestModelWithPrivateFields__' not in sql, '_TestModelWithPrivateFields__ is in the "' + sql + '"')
 
 
 class DatabaseSchemaTests(unittest.TestCase):
