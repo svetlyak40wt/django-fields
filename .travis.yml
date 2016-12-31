@@ -1,2 +1,19 @@
 language: python
-script: ./run-tests.sh
+python:
+    - "3.5"
+    - "3.4"
+    - "2.7"
+sudo: false
+env:
+    - TOX_ENV=django19
+    - TOX_ENV=django18
+    - TOX_ENV=django110
+    - TOX_ENV=djangomaster
+matrix:
+    fast_finish: true
+    allow_failures:
+      - env: TOX_ENV=djangomaster
+install:
+    - pip install tox
+script:
+    - tox -e $TOX_ENV

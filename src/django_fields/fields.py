@@ -1,4 +1,5 @@
 import binascii
+import codecs
 import datetime
 import string
 import sys
@@ -8,7 +9,6 @@ from django import forms
 from django.forms import fields
 from django.db import models
 from django.conf import settings
-from django.utils.encoding import smart_str, force_unicode
 from django.utils.translation import ugettext_lazy as _
 from Crypto import Random
 from Crypto.Random import random
@@ -27,6 +27,14 @@ else:
         import cPickle as pickle
     except:
         import pickle
+
+if sys.version_info[0] == 3:
+    PYTHON3 = True
+    from django.utils.encoding import smart_str, force_text as force_unicode
+else:
+    PYTHON3 = False
+    from django.utils.encoding import smart_str, force_unicode
+
 
 class BaseEncryptedField(models.Field):
     '''This code is based on the djangosnippet #1095
@@ -76,7 +84,12 @@ class BaseEncryptedField(models.Field):
         super(BaseEncryptedField, self).__init__(*args, **kwargs)
 
     def _is_encrypted(self, value):
-        return isinstance(value, basestring) and value.startswith(self.prefix)
+        if PYTHON3 is True:
+            is_enc = isinstance(value, str) and value.startswith(self.prefix)
+            return is_enc
+        else:
+            return isinstance(value, basestring) and value.startswith(
+                self.prefix)
 
     def _get_padding(self, value):
         # We always want at least 2 chars of padding (including zero byte),
@@ -84,7 +97,7 @@ class BaseEncryptedField(models.Field):
         mod = (len(value) + 2) % self.cipher.block_size
         return self.cipher.block_size - mod + 2
 
-    def to_python(self, value):
+    def from_db_value(self, value, expression, connection, context):
         if self._is_encrypted(value):
             if self.block_type:
                 self.iv = binascii.a2b_hex(value[len(self.prefix):])[:len(self.iv)]
@@ -96,7 +109,7 @@ class BaseEncryptedField(models.Field):
             else:
                 decrypt_value = binascii.a2b_hex(value[len(self.prefix):])
             return force_unicode(
-                self.cipher.decrypt(decrypt_value).split('\0')[0]
+                self.cipher.decrypt(decrypt_value).split(b'\0')[0]
             )
         return value
 
@@ -104,23 +117,43 @@ class BaseEncryptedField(models.Field):
         if value is None:
             return None
 
-        value = smart_str(value)
+        if PYTHON3 is True:
+            value = bytes(value.encode('utf-8'))
+        else:
+            value = smart_str(value)
 
         if not self._is_encrypted(value):
             padding = self._get_padding(value)
             if padding > 0:
-                value += "\0" + ''.join([
-                    random.choice(string.printable)
-                    for index in range(padding-1)
-                ])
+                if PYTHON3 is True:
+                    value += bytes("\0".encode('utf-8')) + bytes(
+                        ''.encode('utf-8')).join([
+                            bytes(random.choice(
+                                string.printable).encode('utf-8'))
+                            for index in range(padding - 1)])
+                else:
+                    value += "\0" + ''.join([
+                        random.choice(string.printable)
+                        for index in range(padding - 1)
+                    ])
             if self.block_type:
                 self.cipher = self.cipher_object.new(
                     self.secret_key,
                     getattr(self.cipher_object, self.block_type),
                     self.iv)
-                value = self.prefix + binascii.b2a_hex(self.iv + self.cipher.encrypt(value))
+                if PYTHON3 is True:
+                    value = self.prefix + binascii.b2a_hex(
+                        self.iv + self.cipher.encrypt(value)).decode('utf-8')
+                else:
+                    value = self.prefix + binascii.b2a_hex(
+                        self.iv + self.cipher.encrypt(value))
             else:
-                value = self.prefix + binascii.b2a_hex(self.cipher.encrypt(value))
+                if PYTHON3 is True:
+                    value = self.prefix + binascii.b2a_hex(
+                        self.cipher.encrypt(value)).decode('utf-8')
+                else:
+                    value = self.prefix + binascii.b2a_hex(
+                        self.cipher.encrypt(value))
         return value
 
     def deconstruct(self):
@@ -136,7 +169,6 @@ class BaseEncryptedField(models.Field):
 
 
 class EncryptedTextField(BaseEncryptedField):
-    __metaclass__ = models.SubfieldBase
 
     def get_internal_type(self):
         return 'TextField'
@@ -148,7 +180,6 @@ class EncryptedTextField(BaseEncryptedField):
 
 
 class EncryptedCharField(BaseEncryptedField):
-    __metaclass__ = models.SubfieldBase
 
     def get_internal_type(self):
         return "CharField"
@@ -191,6 +222,9 @@ class BaseEncryptedDateField(BaseEncryptedField):
         return super(BaseEncryptedDateField, self).formfield(**defaults)
 
     def to_python(self, value):
+        return self.from_db_value(value)
+
+    def from_db_value(self, value, expression, connection, context):
         # value is either a date or a string in the format "YYYY:MM:DD"
 
         if value in fields.EMPTY_VALUES:
@@ -199,7 +233,8 @@ class BaseEncryptedDateField(BaseEncryptedField):
             if isinstance(value, self.date_class):
                 date_value = value
             else:
-                date_text = super(BaseEncryptedDateField, self).to_python(value)
+                date_text = super(BaseEncryptedDateField, self).from_db_value(
+                    value, expression, connection, context)
                 date_value = self.date_class(*map(int, date_text.split(':')))
         return date_value
 
@@ -218,7 +253,6 @@ class BaseEncryptedDateField(BaseEncryptedField):
 
 
 class EncryptedDateField(BaseEncryptedDateField):
-    __metaclass__ = models.SubfieldBase
     form_widget = forms.DateInput
     form_field = forms.DateField
     save_format = "%Y:%m:%d"
@@ -228,7 +262,6 @@ class EncryptedDateField(BaseEncryptedDateField):
 
 class EncryptedDateTimeField(BaseEncryptedDateField):
     # FIXME:  This doesn't handle time zones, but Python doesn't really either.
-    __metaclass__ = models.SubfieldBase
     form_widget = forms.DateTimeInput
     form_field = forms.DateTimeField
     save_format = "%Y:%m:%d:%H:%M:%S:%f"
@@ -248,11 +281,15 @@ class BaseEncryptedNumberField(BaseEncryptedField):
         return 'CharField'
 
     def to_python(self, value):
+        return self.from_db_value(value)
+
+    def from_db_value(self, value, expression, connection, context):
         # value is either an int or a string of an integer
         if isinstance(value, self.number_type) or value == '':
             number = value
         else:
-            number_text = super(BaseEncryptedNumberField, self).to_python(value)
+            number_text = super(BaseEncryptedNumberField, self).from_db_value(
+                value, expression, connection, context)
             number = self.number_type(number_text)
         return number
 
@@ -267,16 +304,20 @@ class BaseEncryptedNumberField(BaseEncryptedField):
 
 
 class EncryptedIntField(BaseEncryptedNumberField):
-    __metaclass__ = models.SubfieldBase
-    max_raw_length = len(str(-sys.maxint - 1))
+    if PYTHON3 is True:
+        max_raw_length = len(str(-sys.maxsize - 1))
+    else:
+        max_raw_length = len(str(-sys.maxint - 1))
     number_type = int
     format_string = "%d"
 
 
 class EncryptedLongField(BaseEncryptedNumberField):
-    __metaclass__ = models.SubfieldBase
     max_raw_length = None  # no limit
-    number_type = long
+    if PYTHON3 is True:
+        number_type = int
+    else:
+        number_type = long
     format_string = "%d"
 
     def get_internal_type(self):
@@ -284,7 +325,6 @@ class EncryptedLongField(BaseEncryptedNumberField):
 
 
 class EncryptedFloatField(BaseEncryptedNumberField):
-    __metaclass__ = models.SubfieldBase
     max_raw_length = 150  # arbitrary, but should be sufficient
     number_type = float
     # If this format is too long for some architectures, change it.
@@ -292,22 +332,39 @@ class EncryptedFloatField(BaseEncryptedNumberField):
 
 
 class PickleField(models.TextField):
-    __metaclass__ = models.SubfieldBase
-
     editable = False
     serialize = False
 
     def get_db_prep_value(self, value, connection=None, prepared=False):
-        return pickle.dumps(value)
+        if PYTHON3 is True:
+            # When PYTHON3, we convert data to base64 to prevent errors when
+            # unpickling.
+            val = codecs.encode(pickle.dumps(value), 'base64').decode()
+            return val
+        else:
+            return pickle.dumps(value)
 
     def to_python(self, value):
-        if not isinstance(value, basestring):
-            return value
+        return self.from_db_value(value)
+
+    def from_db_value(self, value, expression, connection, context):
+        if PYTHON3 is True:
+            if not isinstance(value, str):
+                return value
+        else:
+            if not isinstance(value, basestring):
+                return value
 
         # Tries to convert unicode objects to string, cause loads pickle from
         # unicode excepts ugly ``KeyError: '\x00'``.
         try:
-            return pickle.loads(smart_str(value))
+            if PYTHON3 is True:
+                # When PYTHON3, data are in base64 to prevent errors when
+                # unpickling.
+                val = pickle.loads(codecs.decode(value.encode(), "base64"))
+                return val
+            else:
+                return pickle.loads(smart_str(value))
         # If pickle could not loads from string it's means that it's Python
         # string saved to PickleField.
         except ValueError:
@@ -317,14 +374,12 @@ class PickleField(models.TextField):
 
 
 class EncryptedUSPhoneNumberField(BaseEncryptedField):
-    __metaclass__ = models.SubfieldBase
-
     def get_internal_type(self):
         return "CharField"
 
     def formfield(self, **kwargs):
         try:
-            from localflavor.us.forms import USPhoneNumberField            
+            from localflavor.us.forms import USPhoneNumberField
         except ImportError:
             from django.contrib.localflavor.us.forms import USPhoneNumberField
 
@@ -334,8 +389,6 @@ class EncryptedUSPhoneNumberField(BaseEncryptedField):
 
 
 class EncryptedUSSocialSecurityNumberField(BaseEncryptedField):
-    __metaclass__ = models.SubfieldBase
-
     def get_internal_type(self):
         return "CharField"
 
@@ -343,14 +396,14 @@ class EncryptedUSSocialSecurityNumberField(BaseEncryptedField):
         try:
             from localflavor.us.forms import USSocialSecurityNumberField
         except ImportError:
-            from django.contrib.localflavor.us.forms import USSocialSecurityNumberField            
+            from django.contrib.localflavor.us.forms import USSocialSecurityNumberField
 
         defaults = {'form_class': USSocialSecurityNumberField}
         defaults.update(kwargs)
         return super(EncryptedUSSocialSecurityNumberField, self).formfield(**defaults)
 
+
 class EncryptedEmailField(BaseEncryptedField):
-    __metaclass__ = models.SubfieldBase
     description = _("E-mail address")
 
     def get_internal_type(self):

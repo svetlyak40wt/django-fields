@@ -7,6 +7,7 @@ import string
 import sys
 import unittest
 
+import django
 from django.db import connection
 from django.db import models
 
@@ -18,59 +19,107 @@ from .fields import (
     EncryptedEmailField,
 )
 
-from .models import ModelWithPrivateFields
+if django.VERSION[1] > 9:
+    DJANGO_1_10 = True
+else:
+    DJANGO_1_10 = False
+
+if sys.version_info[0] == 3:
+    PYTHON3 = True
+else:
+    PYTHON3 = False
 
 
 class EncObject(models.Model):
-    max_password = 20
+    max_password = 100
     password = EncryptedCharField(max_length=max_password, null=True)
+
+    class Meta:
+        app_label = 'django_fields'
 
 
 class EncDate(models.Model):
     important_date = EncryptedDateField()
+
+    class Meta:
+        app_label = 'django_fields'
 
 
 class EncDateTime(models.Model):
     important_datetime = EncryptedDateTimeField()
     # important_datetime = EncryptedDateField()
 
+    class Meta:
+        app_label = 'django_fields'
+
 
 class EncInt(models.Model):
     important_number = EncryptedIntField()
+
+    class Meta:
+        app_label = 'django_fields'
 
 
 class EncLong(models.Model):
     important_number = EncryptedLongField()
 
+    class Meta:
+        app_label = 'django_fields'
+
 
 class EncFloat(models.Model):
     important_number = EncryptedFloatField()
+
+    class Meta:
+        app_label = 'django_fields'
 
 
 class PickleObject(models.Model):
     name = models.CharField(max_length=16)
     data = PickleField()
 
+    class Meta:
+        app_label = 'django_fields'
+
 
 class EmailObject(models.Model):
     max_email = 255
-    email = EncryptedEmailField()
+    email = EncryptedEmailField(max_length=max_email)
+
+    class Meta:
+        app_label = 'django_fields'
 
 
 class USPhoneNumberField(models.Model):
     phone = EncryptedUSPhoneNumberField()
 
+    class Meta:
+        app_label = 'django_fields'
+
+
 class USSocialSecurityNumberField(models.Model):
     ssn = EncryptedUSSocialSecurityNumberField()
+
+    class Meta:
+        app_label = 'django_fields'
+
 
 class CipherEncObject(models.Model):
     max_password = 20
     password = EncryptedCharField(
         max_length=max_password,
-        block_type = 'MODE_CBC')
+        block_type='MODE_CBC')
+
+    class Meta:
+        app_label = 'django_fields'
+
 
 class CipherEncDate(models.Model):
     important_date = EncryptedDateField(block_type='MODE_CBC')
+
+    class Meta:
+        app_label = 'django_fields'
+
 
 class EncryptTests(unittest.TestCase):
 
@@ -180,14 +229,14 @@ class EncryptTests(unittest.TestCase):
     def _get_encrypted_password(self, id):
         cursor = connection.cursor()
         cursor.execute("select password from django_fields_encobject where id = %s", [id,])
-        passwords = map(lambda x: x[0], cursor.fetchall())
+        passwords = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(passwords), 1)  # only one
         return passwords[0]
 
     def _get_encrypted_password_cipher(self, id):
         cursor = connection.cursor()
         cursor.execute("select password from django_fields_cipherencobject where id = %s", [id,])
-        passwords = map(lambda x: x[0], cursor.fetchall())
+        passwords = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(passwords), 1)  # only one
         return passwords[0]
 
@@ -254,21 +303,21 @@ class DateEncryptTests(unittest.TestCase):
     def _get_encrypted_date(self, id):
         cursor = connection.cursor()
         cursor.execute("select important_date from django_fields_encdate where id = %s", [id,])
-        important_dates = map(lambda x: x[0], cursor.fetchall())
+        important_dates = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(important_dates), 1)  # only one
         return important_dates[0]
 
     def _get_encrypted_datetime(self, id):
         cursor = connection.cursor()
         cursor.execute("select important_datetime from django_fields_encdatetime where id = %s", [id,])
-        important_datetimes = map(lambda x: x[0], cursor.fetchall())
+        important_datetimes = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(important_datetimes), 1)  # only one
         return important_datetimes[0]
 
     def _get_encrypted_date_cipher(self, id):
         cursor = connection.cursor()
         cursor.execute("select important_date from django_fields_cipherencdate where id = %s", [id,])
-        important_dates = map(lambda x: x[0], cursor.fetchall())
+        important_dates = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(important_dates), 1)  # only one
         return important_dates[0]
 
@@ -280,20 +329,37 @@ class NumberEncryptTests(unittest.TestCase):
         EncFloat.objects.all().delete()
 
     def test_int_encryption(self):
-        self._test_number_encryption(EncInt, 'int', sys.maxint)
+        if PYTHON3 is True:
+            self._test_number_encryption(EncInt, 'int', sys.maxsize)
+        else:
+            self._test_number_encryption(EncInt, 'int', sys.maxint)
 
     def test_min_int_encryption(self):
-        self._test_number_encryption(EncInt, 'int', -sys.maxint - 1)
+        if PYTHON3 is True:
+            self._test_number_encryption(EncInt, 'int', -sys.maxsize - 1)
+        else:
+            self._test_number_encryption(EncInt, 'int', -sys.maxint - 1)
 
     def test_long_encryption(self):
-        self._test_number_encryption(EncLong, 'long', long(sys.maxint) * 100L)
+        if PYTHON3 is True:
+            self._test_number_encryption(
+                EncLong, 'long', int(sys.maxsize) * 100)
+        else:
+            self._test_number_encryption(
+                EncLong, 'long', long(sys.maxint) * long(100))
 
     def test_float_encryption(self):
-        value = 123.456 + sys.maxint
+        if PYTHON3 is True:
+            value = 123.456 + sys.maxsize
+        else:
+            value = 123.456 + sys.maxint
         self._test_number_encryption(EncFloat, 'float', value)
 
     def test_one_third_float_encryption(self):
-        value = sys.maxint + (1.0 / 3.0)
+        if PYTHON3 is True:
+            value = sys.maxsize + (1.0 / 3.0)
+        else:
+            value = sys.maxint + (1.0 / 3.0)
         self._test_number_encryption(EncFloat, 'float', value)
 
     def _test_number_encryption(self, number_class, type_name, value):
@@ -311,7 +377,7 @@ class NumberEncryptTests(unittest.TestCase):
         cursor = connection.cursor()
         sql = "select important_number from django_fields_enc%s where id = %%s" % (type_name,)
         cursor.execute(sql, [id,])
-        important_numbers = map(lambda x: x[0], cursor.fetchall())
+        important_numbers = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(important_numbers), 1)  # only one
         return important_numbers[0]
 
@@ -418,7 +484,7 @@ class EncryptEmailTests(unittest.TestCase):
     def _get_encrypted_email(self, id):
         cursor = connection.cursor()
         cursor.execute("select email from django_fields_emailobject where id = %s", [id,])
-        emails = map(lambda x: x[0], cursor.fetchall())
+        emails = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(emails), 1)  # only one
         return emails[0]
 
@@ -434,44 +500,6 @@ class EncryptEmailTests(unittest.TestCase):
         enc_email_2 = self._get_encrypted_email(obj_2.id)
         return enc_email_1, enc_email_2
 
-
-class TestModelWithPrivateFields(ModelWithPrivateFields):
-    """This model is for the unittests against ModelWithPrivateFields.
-    """
-    __state = models.CharField(max_length=255, editable=False)
-    __state_changed_at = models.DateTimeField(editable=False, blank=True, null=True)
-
-    def get_state(self):
-        return self.__state
-
-    def set_state(self, value):
-        self.__state = value
-        self.__state_changed_at = datetime.datetime.now()
-
-    state = property(get_state, set_state)
-    del get_state, set_state
-
-
-
-class PrivateFieldsTests(unittest.TestCase):
-    def test_private_fields(self):
-        obj1 = TestModelWithPrivateFields(state='blah')
-
-        self.assert_(obj1._TestModelWithPrivateFields__state_changed_at is None)
-        obj1.save()
-
-        obj2 = TestModelWithPrivateFields.objects.create(state='minor')
-        self.assert_(obj2._TestModelWithPrivateFields__state_changed_at is None)
-
-        self.assertEqual(1, TestModelWithPrivateFields.objects.filter(state='blah').count())
-        self.assertEqual(2, TestModelWithPrivateFields.objects.all().count())
-
-        obj1.state = 'blah2' # this has a side effect:
-        self.assert_(obj1._TestModelWithPrivateFields__state_changed_at is not None)
-        obj1.save()
-
-        sql = unicode(TestModelWithPrivateFields.objects.filter(state='blah').query)
-        self.assert_('_TestModelWithPrivateFields__' not in sql, '_TestModelWithPrivateFields__ is in the "' + sql + '"')
 
 
 class DatabaseSchemaTests(unittest.TestCase):
@@ -490,7 +518,7 @@ class DatabaseSchemaTests(unittest.TestCase):
     def _get_raw_password_value(self, id):
         cursor = connection.cursor()
         cursor.execute("select password from django_fields_cipherencobject where id = %s", [id, ])
-        passwords = map(lambda x: x[0], cursor.fetchall())
+        passwords = list(map(lambda x: x[0], cursor.fetchall()))
         self.assertEqual(len(passwords), 1)  # only one
         return passwords[0]
 
@@ -505,10 +533,15 @@ class DatabaseSchemaTests(unittest.TestCase):
         password_field = [field for field in table_description if field[0] == 'password']
         self.assertEqual(len(password_field), 1)
         password_field = password_field[0]
+        # if django < 1.10
         # The second field contains the type;
         # this is something like u'varchar(78)'
-        raw_type = password_field[1]
-        matches = re.match('varchar\((\d+)\)', raw_type.lower())
-        self.assertNotEqual(matches, None)
-        column_width = int(matches.groups()[0])
-        return column_width
+        if DJANGO_1_10 is False:
+            raw_type = password_field[1]
+            matches = re.match('varchar\((\d+)\)', raw_type.lower())
+            self.assertNotEqual(matches, None)
+            column_width = int(matches.groups()[0])
+            return column_width
+        else:
+            raw_type = password_field.internal_size
+            return raw_type

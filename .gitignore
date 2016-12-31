@@ -11,3 +11,4 @@ parts/
 test.sqlite
 env
 pip-log.txt
+.tox
