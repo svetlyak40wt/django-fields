@@ -421,14 +421,26 @@ try:
     add_introspection_rules([
         (
             [
-                BaseEncryptedField, EncryptedDateField, BaseEncryptedDateField, EncryptedCharField, EncryptedTextField,
-                EncryptedFloatField, EncryptedDateTimeField, BaseEncryptedNumberField, EncryptedIntField, EncryptedLongField,
-                EncryptedUSPhoneNumberField, EncryptedEmailField,
+                BaseEncryptedField, EncryptedDateField, BaseEncryptedDateField,
+                EncryptedTextField, EncryptedFloatField,
+                EncryptedDateTimeField, BaseEncryptedNumberField,
+                EncryptedIntField, EncryptedLongField,
             ],
             [],
             {
                 'cipher': ('cipher_type', {}),
                 'block_type': ('block_type', {}),
+            },
+        ),
+        (
+            [
+                EncryptedCharField, EncryptedUSPhoneNumberField,
+                EncryptedEmailField,
+            ],
+            [],
+            {
+                'cipher':('cipher_type', {}),
+                "max_length": ["unencrypted_length", {"default": None}],
             },
         ),
     ], ["^django_fields\.fields\..+?Field"])
