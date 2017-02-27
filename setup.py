@@ -14,6 +14,8 @@ setup(
     install_requires=[
         'django',
         'pycryptodomex',
+    ],
+    tests_require=[
         'nose',
         'django-nose==1.4.4',
         'tox',
