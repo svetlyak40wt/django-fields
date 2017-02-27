@@ -48,6 +48,8 @@ class BaseEncryptedField(models.Field):
         self.block_type = kwargs.pop('block_type', None)
         self.secret_key = kwargs.pop('secret_key', settings.SECRET_KEY)
         self.secret_key = self.secret_key[:32]
+        if PYTHON3 is True:
+            self.secret_key = bytes(self.secret_key.encode('utf-8'))
 
         if self.block_type is None:
             warnings.warn(
