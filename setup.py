@@ -13,7 +13,7 @@ setup(
     url='http://github.com/svetlyak40wt/django-fields/',
     install_requires=[
         'django',
-        'pycrypto',
+        'pycryptodomex',
         'nose',
         'django-nose==1.4.4',
         'tox',

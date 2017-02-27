@@ -11,21 +11,11 @@ EncryptedCharField and EncryptedTextField.
 This project uses Travis for continuous integration: [![Build Status](https://secure.travis-ci.org/svetlyak40wt/django-fields.png)](http://travis-ci.org/svetlyak40wt/django-fields)
 
 
-Requirements
------------
-
-This application depends on *python-crypto*, which can be found in many Linux
-repositories, or downloaded from http://www.dlitz.net/software/pycrypto/.
-
-Under Ubuntu, just do:
-
-    sudo apt-get install python-crypto
-
 How to run tests
 ----------------
 
 Examples can be found at the `examples` directory. Look at the, `tests.py`.
-Same project is used to run unittests. To run them, just fire `./run-tests.sh`.
+Same project is used to run unittests. To run them, just fire `../env/bin/python ./run-tests.py`.
 
 Contributors
 ------------
