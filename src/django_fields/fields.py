@@ -11,8 +11,8 @@ from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from django.utils import six
-from Crypto import Random
-from Crypto.Random import random
+from Cryptodome import Random
+from Cryptodome.Random import random
 
 if hasattr(settings, 'USE_CPICKLE'):
     warnings.warn(
