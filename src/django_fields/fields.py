@@ -101,7 +101,7 @@ class BaseEncryptedField(models.Field):
         mod = (len(value) + 2) % self.cipher_object.block_size
         return self.cipher_object.block_size - mod + 2
 
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, expression, connection):
         if self._is_encrypted(value):
             if self.block_type != DEFAULT_BLOCK_TYPE:
                 self.iv = binascii.a2b_hex(value[len(self.prefix):])[:len(self.iv)]
@@ -228,7 +228,7 @@ class BaseEncryptedDateField(BaseEncryptedField):
     def to_python(self, value):
         return self.from_db_value(value)
 
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, expression, connection):
         # value is either a date or a string in the format "YYYY:MM:DD"
 
         if value in fields.EMPTY_VALUES:
@@ -238,7 +238,7 @@ class BaseEncryptedDateField(BaseEncryptedField):
                 date_value = value
             else:
                 date_text = super(BaseEncryptedDateField, self).from_db_value(
-                    value, expression, connection, context)
+                    value, expression, connection)
                 date_value = self.date_class(*map(int, date_text.split(':')))
         return date_value
 
@@ -287,13 +287,13 @@ class BaseEncryptedNumberField(BaseEncryptedField):
     def to_python(self, value):
         return self.from_db_value(value)
 
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, expression, connection):
         # value is either an int or a string of an integer
         if isinstance(value, self.number_type) or value == '':
             number = value
         else:
             number_text = super(BaseEncryptedNumberField, self).from_db_value(
-                value, expression, connection, context)
+                value, expression, connection)
             number = self.number_type(number_text)
         return number
 
@@ -351,7 +351,7 @@ class PickleField(models.TextField):
     def to_python(self, value):
         return self.from_db_value(value)
 
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, expression, connection):
         if PYTHON3 is True:
             if not isinstance(value, str):
                 return value
