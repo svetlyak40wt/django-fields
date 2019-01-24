@@ -1,7 +1,6 @@
 *.pyc
 .*.swp
 *.egg-info
-.eggs
 database.db
 build
 dist
