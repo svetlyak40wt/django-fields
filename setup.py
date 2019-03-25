@@ -13,7 +13,7 @@ setup(
     url='http://github.com/svetlyak40wt/django-fields/',
     install_requires=[
         'django',
-        'pycrypto',
+        'pycryptodome',
     ],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
