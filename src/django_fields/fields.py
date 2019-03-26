@@ -66,7 +66,7 @@ class BaseEncryptedField(models.Field):
                 getattr(self.cipher_object, self.block_type),
                 self.iv)
         else:
-            self.cipher = self.cipher_object.new(self.secret_key)
+            self.cipher = self.cipher_object.new(self.secret_key, self.cipher_object.MODE_CBC)
             self.prefix = '$%s$' % self.cipher_type
 
         self.original_max_length = max_length = kwargs.get('max_length', 40)
