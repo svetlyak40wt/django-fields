@@ -10,7 +10,6 @@ from django.forms import fields
 from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
-from django.utils import six
 from Cryptodome import Random
 from Cryptodome.Random import random
 
@@ -91,7 +90,7 @@ class BaseEncryptedField(models.Field):
 
     def _is_encrypted(self, value):
         return (
-            isinstance(value, six.string_types) and
+            isinstance(value, str) and
             value.startswith(self.prefix)
         )
 
