@@ -4,36 +4,16 @@ import datetime
 import string
 import sys
 import warnings
+import pickle
 
 from django import forms
-from django.forms import fields
+from django.core.validators import EMPTY_VALUES
 from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
+from django.utils.encoding import force_str
 from Cryptodome import Random
 from Cryptodome.Random import random
-
-if hasattr(settings, 'USE_CPICKLE'):
-    warnings.warn(
-        "The USE_CPICKLE options is now obsolete. cPickle will always "
-        "be used unless it cannot be found or DEBUG=True",
-        DeprecationWarning,
-    )
-
-if settings.DEBUG:
-    import pickle
-else:
-    try:
-        import cPickle as pickle
-    except:
-        import pickle
-
-if sys.version_info[0] == 3:
-    PYTHON3 = True
-    from django.utils.encoding import smart_str, force_text as force_unicode
-else:
-    PYTHON3 = False
-    from django.utils.encoding import smart_str, force_unicode
 
 DEFAULT_BLOCK_TYPE = 'MODE_ECB'
 
@@ -47,8 +27,7 @@ class BaseEncryptedField(models.Field):
         self.block_type = kwargs.pop('block_type', None)
         self.secret_key = kwargs.pop('secret_key', settings.SECRET_KEY)
         self.secret_key = self.secret_key[:32]
-        if PYTHON3 is True:
-            self.secret_key = bytes(self.secret_key.encode('utf-8'))
+        self.secret_key = bytes(self.secret_key.encode('utf-8'))
 
         if self.block_type is None:
             warnings.warn(
@@ -111,7 +90,7 @@ class BaseEncryptedField(models.Field):
                 decrypt_value = binascii.a2b_hex(value[len(self.prefix):])[len(self.iv):]
             else:
                 decrypt_value = binascii.a2b_hex(value[len(self.prefix):])
-            return force_unicode(
+            return force_str(
                 self.cipher.decrypt(decrypt_value).split(b'\0')[0]
             )
         return value
@@ -120,43 +99,26 @@ class BaseEncryptedField(models.Field):
         if value is None:
             return None
 
-        if PYTHON3 is True:
-            value = bytes(value.encode('utf-8'))
-        else:
-            value = smart_str(value)
+        value = bytes(value.encode('utf-8'))
 
         if not self._is_encrypted(value):
             padding = self._get_padding(value)
             if padding > 0:
-                if PYTHON3 is True:
-                    value += bytes("\0".encode('utf-8')) + bytes(
-                        ''.encode('utf-8')).join([
-                            bytes(random.choice(
-                                string.printable).encode('utf-8'))
-                            for index in range(padding - 1)])
-                else:
-                    value += "\0" + ''.join([
-                        random.choice(string.printable)
-                        for index in range(padding - 1)
-                    ])
+                value += bytes("\0".encode('utf-8')) + bytes(
+                    ''.encode('utf-8')).join([
+                        bytes(random.choice(
+                            string.printable).encode('utf-8'))
+                        for index in range(padding - 1)])
             if self.block_type != DEFAULT_BLOCK_TYPE:
                 self.cipher = self.cipher_object.new(
                     self.secret_key,
                     getattr(self.cipher_object, self.block_type),
                     self.iv)
-                if PYTHON3 is True:
-                    value = self.prefix + binascii.b2a_hex(
-                        self.iv + self.cipher.encrypt(value)).decode('utf-8')
-                else:
-                    value = self.prefix + binascii.b2a_hex(
-                        self.iv + self.cipher.encrypt(value))
+                value = self.prefix + binascii.b2a_hex(
+                    self.iv + self.cipher.encrypt(value)).decode('utf-8')
             else:
-                if PYTHON3 is True:
-                    value = self.prefix + binascii.b2a_hex(
-                        self.cipher.encrypt(value)).decode('utf-8')
-                else:
-                    value = self.prefix + binascii.b2a_hex(
-                        self.cipher.encrypt(value))
+                value = self.prefix + binascii.b2a_hex(
+                    self.cipher.encrypt(value)).decode('utf-8')
         return value
 
     def deconstruct(self):
@@ -230,7 +192,7 @@ class BaseEncryptedDateField(BaseEncryptedField):
     def from_db_value(self, value, expression, connection):
         # value is either a date or a string in the format "YYYY:MM:DD"
 
-        if value in fields.EMPTY_VALUES:
+        if value in EMPTY_VALUES:
             date_value = value
         else:
             if isinstance(value, self.date_class):
@@ -307,20 +269,14 @@ class BaseEncryptedNumberField(BaseEncryptedField):
 
 
 class EncryptedIntField(BaseEncryptedNumberField):
-    if PYTHON3 is True:
-        max_raw_length = len(str(-sys.maxsize - 1))
-    else:
-        max_raw_length = len(str(-sys.maxint - 1))
+    max_raw_length = len(str(-sys.maxsize - 1))
     number_type = int
     format_string = "%d"
 
 
 class EncryptedLongField(BaseEncryptedNumberField):
     max_raw_length = None  # no limit
-    if PYTHON3 is True:
-        number_type = int
-    else:
-        number_type = long
+    number_type = int
     format_string = "%d"
 
     def get_internal_type(self):
@@ -339,35 +295,25 @@ class PickleField(models.TextField):
     serialize = False
 
     def get_db_prep_value(self, value, connection=None, prepared=False):
-        if PYTHON3 is True:
-            # When PYTHON3, we convert data to base64 to prevent errors when
-            # unpickling.
-            val = codecs.encode(pickle.dumps(value), 'base64').decode()
-            return val
-        else:
-            return pickle.dumps(value)
+        # We convert data to base64 to prevent errors when
+        # unpickling.
+        val = codecs.encode(pickle.dumps(value), 'base64').decode()
+        return val
 
     def to_python(self, value):
         return self.from_db_value(value)
 
     def from_db_value(self, value, expression, connection):
-        if PYTHON3 is True:
-            if not isinstance(value, str):
-                return value
-        else:
-            if not isinstance(value, basestring):
-                return value
+        if not isinstance(value, str):
+            return value
 
         # Tries to convert unicode objects to string, cause loads pickle from
         # unicode excepts ugly ``KeyError: '\x00'``.
         try:
-            if PYTHON3 is True:
-                # When PYTHON3, data are in base64 to prevent errors when
-                # unpickling.
-                val = pickle.loads(codecs.decode(value.encode(), "base64"))
-                return val
-            else:
-                return pickle.loads(smart_str(value))
+            # Data are in base64 to prevent errors when
+            # unpickling.
+            val = pickle.loads(codecs.decode(value.encode(), "base64"))
+            return val
         # If pickle could not loads from string it's means that it's Python
         # string saved to PickleField.
         except ValueError:
@@ -417,24 +363,3 @@ class EncryptedEmailField(BaseEncryptedField):
         defaults = {'form_class': EmailField, 'max_length': self.unencrypted_length}
         defaults.update(kwargs)
         return super(EncryptedEmailField, self).formfield(**defaults)
-
-
-try:
-    from south.modelsinspector import add_introspection_rules
-    add_introspection_rules([
-        (
-            [
-                BaseEncryptedField, EncryptedDateField, BaseEncryptedDateField, EncryptedCharField, EncryptedTextField,
-                EncryptedFloatField, EncryptedDateTimeField, BaseEncryptedNumberField, EncryptedIntField, EncryptedLongField,
-                EncryptedUSPhoneNumberField, EncryptedEmailField,
-            ],
-            [],
-            {
-                'cipher': ('cipher_type', {}),
-                'block_type': ('block_type', {}),
-            },
-        ),
-    ], ["^django_fields\.fields\..+?Field"])
-    add_introspection_rules([], ["^django_fields\.fields\.PickleField"])
-except ImportError:
-    pass
