@@ -1,0 +1,11 @@
+{
+  "host": "github.com",
+  "owner": "last-partizan",
+  "repository": "django-fields",
+  "bumpFiles": [
+    {
+      "filename": "VERSION",
+      "type": "plain-text"
+    }
+  ]
+}

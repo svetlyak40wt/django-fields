@@ -1,10 +1,10 @@
-from setuptools import setup
+from pathlib import Path
 
-version = '0.5.0'
+from setuptools import setup
 
 setup(
     name='django-fields',
-    version=version,
+    version=(Path(__file__).parent / "VERSION").read_text().strip(),
     description='Django-fields is an application which includes different kinds of models fields.',
     keywords='django apps tools collection',
     license='New BSD License',
