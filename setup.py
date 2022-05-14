@@ -1,6 +1,6 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
-version = '0.4.0'
+version = '0.5.0'
 
 setup(
     name='django-fields',
@@ -16,9 +16,7 @@ setup(
         'pycryptodomex',
     ],
     tests_require=[
-        'nose',
-        'django-nose==1.4.4',
-        'tox',
+        'pytest',
     ],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
@@ -32,5 +30,4 @@ setup(
     package_dir={'': 'src'},
     packages=['django_fields'],
     include_package_data=True,
-    test_suite="runtests.runtests",
 )

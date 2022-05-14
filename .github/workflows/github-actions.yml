@@ -1,0 +1,42 @@
+# Docs:
+#  - https://docs.github.com/en/actions/guides/about-service-containers
+#  - https://github.com/actions/example-services/blob/main/.github/workflows/mongodb-service.yml
+name: CI
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python:
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "pypy3"
+        django:
+          - "Django>=3.0,<3.2"
+          - "Django>=3.2,<3.3"
+          - "Django>=4.0,<4.1"
+        exclude:
+          - python: "3.7"
+            django: "Django>=4.0,<4.1"
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DJANGO: ${{ matrix.django }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Set up env
+        run: |
+          poetry run pip install -q pytest pycryptodomex "${{ matrix.django }}"
+      - name: Run tests
+        run: |
+          python -m pytest src/django_fields/tests
