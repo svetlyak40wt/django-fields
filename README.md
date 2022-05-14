@@ -8,8 +8,6 @@ Django-fields is an application which includes different kinds of models fields.
 Right now, application contains two fields with encryption support:
 EncryptedCharField and EncryptedTextField.
 
-This project uses Travis for continuous integration: [![Build Status](https://secure.travis-ci.org/svetlyak40wt/django-fields.png)](http://travis-ci.org/svetlyak40wt/django-fields)
-
 
 How to run tests
 ----------------
@@ -20,7 +18,7 @@ Same project is used to run unittests. To run them, just fire `../env/bin/python
 Contributors
 ------------
 
-* [zbyte64](http://www.djangosnippets.org/users/zbyte64/) — thanks to for 
+* [zbyte64](http://www.djangosnippets.org/users/zbyte64/) — thanks to for
   his [django snippet](http://www.djangosnippets.org/snippets/1095/) for encrypted
   fields. After some fixes, this snippet works as supposed.
 * John Morrissey — for fixing bug in PickleField.
@@ -29,7 +27,3 @@ Contributors
 * Igor Davydenko — PickleField.
 * kromem - Added support for specifying `block_type` on encrypted fields.
 * Brooks Travis - new field for encrypted US Social Security Number and other fixes.
-
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/svetlyak40wt/django-fields/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
-
