@@ -1,3 +1,19 @@
+# Changelog
+
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+## [0.5.0](https://github.com/last-partizan/django-fields/compare/v0.4.0...v0.5.0) (2022-05-14)
+
+
+### Features
+
+* Use github-ci ([70f2172](https://github.com/last-partizan/django-fields/commit/70f21721cf60cecc8c3fd0ed042bd5aab882ae09))
+
+
+### Bug Fixes
+
+* Remove six dependency ([5ca4186](https://github.com/last-partizan/django-fields/commit/5ca41861e31ddb5ff68ddb2c6c4112a2e6f55fab))
+
 ChangeLog
 =========
 
