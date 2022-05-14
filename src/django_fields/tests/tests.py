@@ -1,9 +1,5 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-
 import datetime
 import re
-import string
 import sys
 import unittest
 
@@ -11,7 +7,7 @@ import django
 from django.db import connection
 from django.db import models
 
-from .fields import (
+from django_fields.fields import (
     EncryptedCharField, EncryptedDateField,
     EncryptedDateTimeField, EncryptedIntField,
     EncryptedLongField, EncryptedFloatField, PickleField,
@@ -23,11 +19,6 @@ if django.VERSION[1] > 9:
     DJANGO_1_10 = True
 else:
     DJANGO_1_10 = False
-
-if sys.version_info[0] == 3:
-    PYTHON3 = True
-else:
-    PYTHON3 = False
 
 
 class EncObject(models.Model):
@@ -329,37 +320,21 @@ class NumberEncryptTests(unittest.TestCase):
         EncFloat.objects.all().delete()
 
     def test_int_encryption(self):
-        if PYTHON3 is True:
-            self._test_number_encryption(EncInt, 'int', sys.maxsize)
-        else:
-            self._test_number_encryption(EncInt, 'int', sys.maxint)
+        self._test_number_encryption(EncInt, 'int', sys.maxsize)
 
     def test_min_int_encryption(self):
-        if PYTHON3 is True:
-            self._test_number_encryption(EncInt, 'int', -sys.maxsize - 1)
-        else:
-            self._test_number_encryption(EncInt, 'int', -sys.maxint - 1)
+        self._test_number_encryption(EncInt, 'int', -sys.maxsize - 1)
 
     def test_long_encryption(self):
-        if PYTHON3 is True:
-            self._test_number_encryption(
-                EncLong, 'long', int(sys.maxsize) * 100)
-        else:
-            self._test_number_encryption(
-                EncLong, 'long', long(sys.maxint) * long(100))
+        self._test_number_encryption(
+            EncLong, 'long', int(sys.maxsize) * 100)
 
     def test_float_encryption(self):
-        if PYTHON3 is True:
-            value = 123.456 + sys.maxsize
-        else:
-            value = 123.456 + sys.maxint
+        value = 123.456 + sys.maxsize
         self._test_number_encryption(EncFloat, 'float', value)
 
     def test_one_third_float_encryption(self):
-        if PYTHON3 is True:
-            value = sys.maxsize + (1.0 / 3.0)
-        else:
-            value = sys.maxint + (1.0 / 3.0)
+        value = sys.maxsize + (1.0 / 3.0)
         self._test_number_encryption(EncFloat, 'float', value)
 
     def _test_number_encryption(self, number_class, type_name, value):

@@ -78,8 +78,5 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.admin',
     'django_fields',
-    'django_nose',
     'example.blog',
 )
-
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'

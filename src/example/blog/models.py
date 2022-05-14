@@ -1,1 +1,1 @@
-from django_fields.tests import EncObject
+from django_fields.tests.tests import EncObject
