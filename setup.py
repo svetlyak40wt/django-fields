@@ -17,6 +17,7 @@ setup(
     ],
     tests_require=[
         'pytest',
+        'pytest-coverage',
     ],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',

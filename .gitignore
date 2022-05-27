@@ -2,6 +2,7 @@
 .*.swp
 *.egg-info
 .eggs
+.coverage
 database.db
 build
 dist
