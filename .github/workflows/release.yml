@@ -1,0 +1,28 @@
+# Docs:
+#  - https://docs.github.com/en/actions/guides/about-service-containers
+#  - https://github.com/actions/example-services/blob/main/.github/workflows/mongodb-service.yml
+name: Release
+on:
+  push:
+    tags:
+      - v*
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  PYTHONPATH: "src"
+jobs:
+  Release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+      - name: Build artifacts
+        run: |
+          python setup.py sdist bdist_wheel
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*
+          draft: true
